@@ -37,7 +37,9 @@ public class MenuActivity extends AppCompatActivity {
 
         if (getSupportActionBar() != null) getSupportActionBar().hide();
 
-        TextView tvUserSummary = findViewById(R.id.tvUserSummary);
+        TextView tvUserNameAndDept = findViewById(R.id.tvUserNameAndDept);
+        TextView tvUserContact = findViewById(R.id.tvUserContact);
+        TextView tvUserEmail = findViewById(R.id.tvUserEmail);
         findViewById(R.id.btnLogout).setOnClickListener(v -> performLogout());
 
         SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
@@ -47,14 +49,9 @@ public class MenuActivity extends AppCompatActivity {
         String innerNo = prefs.getString("innerNo", "");
         String hpno = prefs.getString("hpno", "");
 
-        StringBuilder summary = new StringBuilder();
-        if (!deptName.isEmpty()) summary.append(deptName);
-        if (!userName.isEmpty()) summary.append(summary.length() > 0 ? " | " : "").append(userName);
-        if (!innerNo.isEmpty()) summary.append(summary.length() > 0 ? " | " : "").append("내선:").append(innerNo);
-        if (!hpno.isEmpty()) summary.append(summary.length() > 0 ? " | " : "").append("HP:").append(hpno);
-        if (!email.isEmpty()) summary.append(summary.length() > 0 ? " | " : "").append(email);
-        
-        tvUserSummary.setText(summary.toString());
+        tvUserNameAndDept.setText((userName.isEmpty() ? "영업사원" : userName) + (deptName.isEmpty() ? "" : " | " + deptName));
+        tvUserContact.setText("HP: " + (hpno.isEmpty() ? "-" : hpno) + "  |  내선: " + (innerNo.isEmpty() ? "-" : innerNo));
+        tvUserEmail.setText(email.isEmpty() ? "email@domain.com" : email);
 
         rvMenu = findViewById(R.id.rvMenu);
         rvMenu.setLayoutManager(new LinearLayoutManager(this));
@@ -120,7 +117,6 @@ public class MenuActivity extends AppCompatActivity {
                     menuList.clear();
                     
                     for (Map<String, Object> rawMenu : response.body()) {
-                        // 🚀 Create a mutable copy to avoid potential crash if original map is immutable
                         Map<String, Object> menu = new java.util.HashMap<>(rawMenu);
                         String codecd = getStringVal(menu, "codecd");
                         String codenm = getStringVal(menu, "codenm");

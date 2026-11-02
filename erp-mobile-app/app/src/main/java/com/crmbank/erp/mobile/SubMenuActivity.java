@@ -10,11 +10,6 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.crmbank.erp.mobile.hmet.MHMET100U;
-import com.crmbank.erp.mobile.hsaa.MHSAA400S;
-import com.crmbank.erp.mobile.hsaa.MHSAA600U;
-import com.crmbank.erp.mobile.hsqt.MHSQT110U;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -26,8 +21,8 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 /**
- * 🚀 서브메뉴 관리 (최종 수정 버전)
- * - 인위적인 필터링 전면 제거 (DB 결과 100% 반영)
+ * 🚀 서브메뉴 관리 (최종 정돈 및 동적 리플렉션 100% 활용 버전)
+ * - 하드코딩된 예외 분기 제거 및 동적 클래스 로딩 표준화
  */
 public class SubMenuActivity extends BaseActivity {
 
@@ -66,14 +61,13 @@ public class SubMenuActivity extends BaseActivity {
         });
         rvSubMenu.setAdapter(adapter);
 
-        // 🚀 즉각 조회를 위해 캐시 무시하고 강제 네트워크 호출 우선
         loadSubMenus();
     }
 
     private void loadSubMenus() {
         Map<String, Object> params = new HashMap<>();
         params.put("cmpycd", cmpycd);
-        params.put("userid", "MOBILE"); // DB 프로시저 MOBILE_SEL 섹션 트리거
+        params.put("userid", "MOBILE");
         params.put("upmucd", upmucd);
         params.put("usergrp", usergrp);
 
@@ -123,32 +117,11 @@ public class SubMenuActivity extends BaseActivity {
     }
 
     private void handleProgramClick(String pgmid, String pgnm) {
-        // 🚀 바코드 전용 독립 메뉴 라우팅 (기존 HSIO010U/HSIO510U 수동 입출고 화면과 100% 완전 분리)
-        if ("HMET100U".equalsIgnoreCase(pgmid) || "MHMET100U".equalsIgnoreCase(pgmid)) {
-            Intent intent = new Intent(this, MHMET100U.class);
-            startActivity(intent);
-            return;
+        if (pgmid != null) {
+            pgmid = pgmid.replace("_", "");
         }
-        if ("HSAA400S".equalsIgnoreCase(pgmid) || "MHSAA400S".equalsIgnoreCase(pgmid)) {
-            Intent intent = new Intent(this, MHSAA400S.class);
-            startActivity(intent);
-            return;
-        }
-        if ("HSAA600U".equalsIgnoreCase(pgmid) || "MHSAA600U".equalsIgnoreCase(pgmid)) {
-            Intent intent = new Intent(this, MHSAA600U.class);
-            startActivity(intent);
-            return;
-        }
-        if ("HSQT100U".equalsIgnoreCase(pgmid) || "MHSQT_100U".equalsIgnoreCase(pgmid)) {
-            Intent intent = new Intent(this, MHSQT_100U.class);
-            startActivity(intent);
-            return;
-        }
-        if ("HSQTY110U".equalsIgnoreCase(pgmid) || "MHSQTY110U".equalsIgnoreCase(pgmid) || "HSQT110U".equalsIgnoreCase(pgmid)) {
-            Intent intent = new Intent(this, MHSQT110U.class);
-            startActivity(intent);
-            return;
-        }
+        
+        // 💡 인텐트 Extra(파라미터) 전달이 필요한 특수 바코드 화면들만 예외 처리
         if ("HSIO104U".equalsIgnoreCase(pgmid) || "MHSIO104U".equalsIgnoreCase(pgmid) || "BARCODE_INBOUND".equalsIgnoreCase(pgmid)) {
             Intent intent = new Intent(this, InboundRegisterActivity.class);
             intent.putExtra("IOGBN_MODE", "100");
@@ -162,8 +135,9 @@ public class SubMenuActivity extends BaseActivity {
             return;
         }
 
+        // 🚀 표준 동적 리플렉션 로딩 (HSQT100U -> MHSQT100U, HSQT200U -> MHSQT200U 등 자동 매핑)
         String activityName = "M" + pgmid.toUpperCase().replace("_", "");
-        String[] modules = {"haba", "hgoa", "hsaa", "hpba", "hpio", "hppl", "hsba", "hsio", "hsod", "hsqm", "hsst"};
+        String[] modules = {"haba", "hgoa", "hsaa", "hsba", "hmet", "hsqt"};
         boolean found = false;
 
         for (String module : modules) {

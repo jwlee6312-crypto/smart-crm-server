@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#F0F2F5"
+    android:importantForAutofill="noExcludeDescendants"
+    tools:ignore="HardcodedText,ContentDescription,LabelFor,TextFields,RtlSymmetry,RtlHardcoded">
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#FFFFFF"
+        android:padding="12dp"
+        android:elevation="4dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/tvHeaderTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="방문계획 조회"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="#333333"/>
+    </LinearLayout>
+
+    <!-- Filter Bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:background="#FFFFFF"
+        android:layout_marginHorizontal="8dp"
+        android:layout_marginTop="6dp"
+        android:elevation="2dp"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="50dp"
+            android:layout_height="wrap_content"
+            android:text="기준년월"
+            android:textSize="11sp"
+            android:textColor="#333333"
+            android:textStyle="bold"/>
+
+        <EditText
+            android:id="@+id/etYm"
+            android:layout_width="80dp"
+            android:layout_height="34dp"
+            android:background="@drawable/bg_input_field"
+            android:inputType="number"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:textSize="11sp"
+            android:text="202610"/>
+
+        <TextView
+            android:layout_width="50dp"
+            android:layout_height="wrap_content"
+            android:text="영업사원"
+            android:textSize="11sp"
+            android:textColor="#333333"
+            android:textStyle="bold"
+            android:layout_marginStart="8dp"/>
+
+        <Spinner
+            android:id="@+id/spSalesman"
+            android:layout_width="0dp"
+            android:layout_height="34dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_input_field"/>
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnSearch"
+            android:layout_width="55dp"
+            android:layout_height="34dp"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/bg_button_gradient_gray"
+            android:text="조회"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp"
+            android:textStyle="bold"/>
+    </LinearLayout>
+
+    <!-- Table Header Bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="#E3F2FD"
+        android:paddingVertical="6dp"
+        android:paddingHorizontal="12dp"
+        android:layout_marginHorizontal="8dp"
+        android:layout_marginTop="6dp"
+        android:gravity="center_vertical"
+        android:elevation="1dp">
+
+        <TextView
+            android:layout_width="110dp"
+            android:layout_height="wrap_content"
+            android:text="방문예정일"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="#1976D2"
+            android:gravity="center"/>
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="거래처명 / 영업건명 / 주소"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="#1976D2"
+            android:layout_marginStart="8dp"/>
+    </LinearLayout>
+
+    <!-- ListView for Visit Plans -->
+    <ListView
+        android:id="@+id/lvVisitPlans"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:divider="@android:color/transparent"
+        android:dividerHeight="2dp"
+        android:paddingHorizontal="8dp"
+        android:paddingTop="2dp"/>
+
+</LinearLayout>

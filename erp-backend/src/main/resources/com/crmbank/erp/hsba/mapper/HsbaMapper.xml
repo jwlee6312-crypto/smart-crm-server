@@ -330,4 +330,89 @@
            AND CODE      = #{code}
     </update>
 
+    <!-- ========================================== -->
+    <!-- HSBA_130U: 거래처 배송처 등록 (위·경도 포함)   -->
+    <!-- ========================================== -->
+    <select id="HSBA_130U_SELECT" parameterType="map" resultType="map">
+        select a.cmpycd, a.custcd, b.custnm, a.trancd, a.postno, a.address, a.d_address,
+               '' as area, '' as areanm,
+               a.damdang, a.telno, a.email, a.useyn, a.latitude, a.longitude
+          from hsba130t_tbl a
+          left outer join haba020t_tbl b
+            on a.cmpycd = b.cmpycd
+           and a.custcd = b.custcd
+         where b.cmpycd = #{cmpycd}
+           <if test="custnm != null and custnm != ''">
+             and b.custnm like concat('%', #{custnm}, '%')
+           </if>
+           <if test="custcd != null and custcd != ''">
+             and a.custcd = #{custcd}
+           </if>
+           and b.iogbn in ('010','030')
+         order by b.custnm, a.trancd
+    </select>
+
+    <select id="HSBA_130U_SELECT_CUST" parameterType="map" resultType="map">
+        select custcd, custnm from haba020t_tbl
+         where cmpycd = #{cmpycd}
+           and iogbn in ('010','030')
+           <if test="custnm != null and custnm != ''">
+             and custnm like concat('%', #{custnm}, '%')
+           </if>
+           and useyn = 'Y'
+         order by custcd
+    </select>
+
+    <insert id="HSBA_130U_INSERT" parameterType="map">
+        INSERT INTO hsba130t_tbl
+        (CMPYCD, CUSTCD, TRANCD, AREA, POSTNO, ADDRESS, D_ADDRESS, DAMDANG, TELNO, EMAIL, USEYN, LATITUDE, LONGITUDE, ADDTIME, UPDTIME, UPDEMP)
+        VALUES
+        (#{cmpycd}, #{custcd},
+         IFNULL((SELECT LPAD(CAST(IFNULL(MAX(CAST(x.TRANCD AS UNSIGNED)), 0) + 1 AS CHAR), 2, '0') FROM hsba130t_tbl x WHERE x.CMPYCD = #{cmpycd} AND x.CUSTCD = #{custcd}), '01'),
+         IFNULL(NULLIF(#{area}, ''), '000'), #{postno}, #{address}, #{d_address}, #{damdang}, #{telno}, #{email}, IFNULL(#{useyn}, 'Y'), #{latitude}, #{longitude}, NOW(), NOW(), #{updemp})
+    </insert>
+
+    <update id="HSBA_130U_UPDATE" parameterType="map">
+        UPDATE hsba130t_tbl
+           SET AREA      = IFNULL(NULLIF(#{area}, ''), '000'),
+               POSTNO    = #{postno},
+               ADDRESS   = #{address},
+               D_ADDRESS = #{d_address},
+               DAMDANG   = #{damdang},
+               TELNO     = #{telno},
+               EMAIL     = #{email},
+               USEYN     = #{useyn},
+               LATITUDE  = #{latitude},
+               LONGITUDE = #{longitude},
+               UPDTIME   = NOW(),
+               UPDEMP    = #{updemp}
+         WHERE CMPYCD    = #{cmpycd}
+           AND CUSTCD    = #{custcd}
+           AND TRANCD    = #{trancd}
+    </update>
+
+    <delete id="HSBA_130U_DELETE" parameterType="map">
+        DELETE FROM hsba130t_tbl
+         WHERE CMPYCD = #{cmpycd}
+           AND CUSTCD = #{custcd}
+           AND TRANCD = #{trancd}
+    </delete>
+
+    <select id="selectUngeocodedAddresses" parameterType="map" resultType="map">
+        SELECT cmpycd, custcd, trancd, address FROM hsba130t_tbl
+         WHERE cmpycd = #{cmpycd}
+           AND address IS NOT NULL AND address != ''
+           AND (latitude IS NULL OR longitude IS NULL)
+    </select>
+
+    <update id="updateLatLon" parameterType="map">
+        UPDATE hsba130t_tbl
+           SET latitude = #{latitude},
+               longitude = #{longitude},
+               updtime = NOW()
+         WHERE cmpycd = #{cmpycd}
+           AND custcd = #{custcd}
+           AND trancd = #{trancd}
+    </update>
+
 </mapper>

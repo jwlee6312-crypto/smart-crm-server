@@ -28,10 +28,12 @@ public interface HsaaMapper {
 
     // 2. 상담일지 (HSAA300T)
     List<Hsaa300tDto> selectDiaryList(Hsaa300tDto dto);
+    Hsaa300tDto selectDiary(Hsaa300tDto dto);
     void insertDiary(Hsaa300tDto dto);
     void updateDiary(Hsaa300tDto dto);
     void deleteDiary(Hsaa300tDto dto);
     Integer nextDiarySer(Hsaa300tDto dto);
+    void deleteManualVisitPlan(Map<String, Object> params);
 
     // 3. 단계변동 (HSAA310T)
     List<Hsaa310tDto> selectStageList(Hsaa310tDto dto);
@@ -104,5 +106,16 @@ public interface HsaaMapper {
     // void syncDiaryPlan(@Param("userid") String userid, @Param("subject") String subject, @Param("startdate") String startdate, @Param("content") String content, @Param("keyword") String keyword); // erp_diary
     
     List<Map<String, Object>> selectHsbaCodes(@Param("cmpycd") String cmpycd, @Param("cdgbn") String cdgbn);
+
+    List<Map<String, Object>> selectActiveDealsForVisitPlan(@Param("cmpycd") String cmpycd, @Param("userid") String userid);
+    List<Map<String, Object>> selectImportanceCycles(@Param("cmpycd") String cmpycd);
+    List<Map<String, Object>> selectHolidaysForMonth(@Param("cmpycd") String cmpycd, @Param("ym") String ym);
+    List<Map<String, Object>> selectExistingVisitPlan(@Param("cmpycd") String cmpycd, @Param("userid") String userid, @Param("ym") String ym);
+    void upsertVisitPlan(Map<String, Object> params);
+
+    Map<String, Object> selectWeeklyReport(@Param("cmpycd") String cmpycd, @Param("userid") String userid, @Param("weekid") String weekid);
+    void upsertWeeklyReport(Map<String, Object> params);
+    List<Map<String, Object>> selectLastWeekConsultations(@Param("cmpycd") String cmpycd, @Param("userid") String userid, @Param("sdate") String sdate, @Param("edate") String edate);
+    List<Map<String, Object>> selectNextWeekVisitPlans(@Param("cmpycd") String cmpycd, @Param("userid") String userid, @Param("sdate") String sdate, @Param("edate") String edate);
 }
 

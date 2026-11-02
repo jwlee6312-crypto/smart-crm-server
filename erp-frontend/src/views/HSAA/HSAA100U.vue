@@ -214,6 +214,23 @@
                                 </td>
                             </tr>
                             <tr>
+                                <th class="bg-light text-primary fw-bold">후속조치(Action)</th>
+                                <td colspan="3"><input v-model="formDiary.actionItem" type="text" class="form-control form-control-sm" placeholder="예: 견적서 재발송 및 상세 스펙 전달" /></td>
+                                <th class="bg-light border-start text-primary fw-bold">조치완료여부</th>
+                                <td>
+                                    <div class="form-check form-switch m-0">
+                                        <input v-model="formDiary.actionStatus" class="form-check-input" type="checkbox" true-value="1" false-value="0" id="swActionStatus">
+                                        <label class="form-check-label ms-1 small fw-bold" for="swActionStatus">{{ formDiary.actionStatus === '1' ? '완료' : '미해결' }}</label>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="bg-light text-danger fw-bold">다음 미팅일</th>
+                                <td><input type="date" v-model="formDiary.nextMeetDt" class="form-control form-control-sm" /></td>
+                                <th class="bg-light border-start text-danger fw-bold">다음 미팅 안건</th>
+                                <td colspan="3"><input v-model="formDiary.nextMeetAgenda" type="text" class="form-control form-control-sm" placeholder="다음 미팅 주요 안건 및 목표 입력" /></td>
+                            </tr>
+                            <tr>
                                 <th class="bg-light border-top border-bottom">상담본문</th>
                                 <td colspan="5" class="p-0 border-top border-bottom">
                                     <textarea v-model="formDiary.diarycontent" class="form-control border-0 rounded-0" style="min-height: 250px; resize: vertical;" placeholder="상담 내용을 상세히 기록하세요."></textarea>
@@ -397,7 +414,7 @@ const formSales = reactive<any>({
     salesremark: '', choice: '200', importrank: '200', foredelivdt: today, svcno: '',
     wincd: '', failcd: '', holdcd: '', realdt: today, faildt: today, holdondt: today
 })
-const formDiary = reactive<any>({ ser: '', contdt: today, conthh: 10, contmm: 0, channel: '020', channelkind: '', custid: '', diarycontent: `[상담 목적]\n- \n\n[상담 내용]\n- \n\n[향후 계획/요청사항]\n- `, content: '', tostate: '', remark: '', reportyn: false, reportcontent: '', hpno: '', custtel: '', wincd: '', failcd: '', holdcd: '', realamt: 0, realdt: today, holdondt: today, salescoaching: '', reportdt: '' })
+const formDiary = reactive<any>({ ser: '', contdt: today, conthh: 10, contmm: 0, channel: '020', channelkind: '', custid: '', diarycontent: `[상담 목적]\n- \n\n[상담 내용]\n- \n\n[향후 계획/요청사항]\n- `, content: '', tostate: '', remark: '', reportyn: false, reportcontent: '', hpno: '', custtel: '', wincd: '', failcd: '', holdcd: '', realamt: 0, realdt: today, holdondt: today, salescoaching: '', reportdt: '', actionItem: '', actionStatus: '0', nextMeetDt: '', nextMeetAgenda: '' })
 const formKeyman = reactive<any>({ custid: '', name: '', hpno: '', custdept: '', jikch: '', mail: '', mail2: '', custtel: '', innumber: '', birthday: today, birgb: '1', keyman: '040', level: '200', favor: '720', haddress: '', remark: '' })
 const formStage = reactive<any>({ ser: '', chngdt: today, bfstatenm: '', state: '', remark: '', wincd: '', failcd: '', holdcd: '', realamt: 0, realdt: today, bfstate: '' })
 const formDocs = reactive<any>({ ser: '', docgb: '', title: '', filename: '', file: null })

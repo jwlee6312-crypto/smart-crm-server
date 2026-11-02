@@ -30,7 +30,7 @@ public class MenuAdapter extends RecyclerView.Adapter<MenuAdapter.MenuViewHolder
     @NonNull
     @Override
     public MenuViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_menu_sub_item, parent, false);
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_menu_row, parent, false);
         return new MenuViewHolder(view);
     }
 
@@ -40,36 +40,47 @@ public class MenuAdapter extends RecyclerView.Adapter<MenuAdapter.MenuViewHolder
         String name = (String) menu.get("menuNm");
         String code = String.valueOf(menu.get("codecd"));
         holder.tvMenuName.setText(name);
+
+        // 🚀 세로 행(Row)별 배경 색상 구분 (선명하고 균형 있는 톤)
+        if (position == 0) {
+            holder.layoutCardBg.setBackgroundColor(Color.parseColor("#F0F7FF")); // Soft Blue
+        } else if (position == 1) {
+            holder.layoutCardBg.setBackgroundColor(Color.parseColor("#FEF9E7")); // Soft Amber
+        } else if (position == 2) {
+            holder.layoutCardBg.setBackgroundColor(Color.parseColor("#F0FFF4")); // Soft Green
+        } else {
+            holder.layoutCardBg.setBackgroundColor(Color.parseColor("#FAF5FF")); // Soft Purple
+        }
         
         // 🚀 1. 기본 설정 (Default)
         int iconRes = android.R.drawable.ic_menu_agenda; 
-        int color = Color.parseColor("#64748B"); // 세련된 Slate Gray
+        int color = Color.parseColor("#0F172A"); // 선명한 다크 네이비
 
         // 🚀 2. 핵심 4개 영역 전용 디자인 (우선 적용)
         if ("020".equals(code)) { // 구매
             iconRes = android.R.drawable.ic_menu_agenda;
-            color = Color.parseColor("#38A169"); // Green
+            color = Color.parseColor("#276749"); // Dark Green
         } else if ("030".equals(code)) { // 영업
             iconRes = android.R.drawable.ic_menu_myplaces;
-            color = Color.parseColor("#3182CE"); // Blue
+            color = Color.parseColor("#2B6CB0"); // Dark Blue
         } else if ("080".equals(code)) { // SFA 영업활동관리
             iconRes = android.R.drawable.ic_menu_edit;
-            color = Color.parseColor("#D69E2E"); // Amber
+            color = Color.parseColor("#C05621"); // Dark Amber
         } else if ("040".equals(code)) { // 관리정보
             iconRes = android.R.drawable.ic_menu_info_details;
-            color = Color.parseColor("#805AD5"); // Purple
+            color = Color.parseColor("#6B46C1"); // Dark Purple
         } 
-        // 🚀 3. 키워드 기반 보조 매핑 (인사, 회계 등)
-        else if (name.contains("인사") || name.contains("HR")) {
+        // 🚀 3. 키워드 기반 보조 매핑
+        else if (name != null && (name.contains("인사") || name.contains("HR"))) {
             iconRes = android.R.drawable.ic_menu_view;
-        } else if (name.contains("회계") || name.contains("Account")) {
+        } else if (name != null && (name.contains("회계") || name.contains("Account"))) {
             iconRes = android.R.drawable.ic_menu_save;
         }
 
         holder.ivMenuIcon.setImageResource(iconRes);
         holder.ivMenuIcon.setColorFilter(color);
         
-        holder.layoutItemContainer.setOnClickListener(v -> listener.onMenuClick(menu));
+        holder.layoutCardBg.setOnClickListener(v -> listener.onMenuClick(menu));
     }
 
     @Override
@@ -80,13 +91,13 @@ public class MenuAdapter extends RecyclerView.Adapter<MenuAdapter.MenuViewHolder
     static class MenuViewHolder extends RecyclerView.ViewHolder {
         ImageView ivMenuIcon;
         TextView tvMenuName;
-        View layoutItemContainer;
+        View layoutCardBg;
 
         public MenuViewHolder(@NonNull View itemView) {
             super(itemView);
-            ivMenuIcon = itemView.findViewById(R.id.ivItemIcon);
-            tvMenuName = itemView.findViewById(R.id.tvProgramName);
-            layoutItemContainer = itemView.findViewById(R.id.layoutItemContainer);
+            ivMenuIcon = itemView.findViewById(R.id.ivMenuIcon);
+            tvMenuName = itemView.findViewById(R.id.tvMenuName);
+            layoutCardBg = itemView.findViewById(R.id.layoutCardBg);
         }
     }
 }

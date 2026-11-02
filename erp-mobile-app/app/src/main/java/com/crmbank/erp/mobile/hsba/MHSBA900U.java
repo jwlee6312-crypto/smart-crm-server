@@ -1,5 +1,6 @@
 package com.crmbank.erp.mobile.hsba;
 
+import android.annotation.SuppressLint;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -36,6 +37,8 @@ import retrofit2.Response;
  * 🚀 [MHSBA900U] 코드정보 등록
  * 웹 HSBA900U.vue 로직 기반 모바일 최적화 버전
  */
+@SuppressLint("UseSwitchCompatOrMaterialCode")
+@SuppressWarnings("unused")
 public class MHSBA900U extends BaseActivity {
 
     private Spinner spCodeGbn;
@@ -202,14 +205,15 @@ public class MHSBA900U extends BaseActivity {
         @Override public Object getItem(int p) { return codeList.get(p); }
         @Override public long getItemId(int p) { return p; }
         @Override public View getView(int p, View v, ViewGroup pr) {
-            if (v == null) v = LayoutInflater.from(MHSBA900U.this).inflate(R.layout.item_code_info, pr, false);
+            View view = v;
+            if (view == null) view = LayoutInflater.from(MHSBA900U.this).inflate(R.layout.item_code_info, pr, false);
             Map<String, Object> item = codeList.get(p);
 
-            ((TextView) v.findViewById(R.id.tvCode)).setText(getStringVal(item, "code"));
-            ((TextView) v.findViewById(R.id.tvCodeNm)).setText(getStringVal(item, "cdnm"));
-            ((TextView) v.findViewById(R.id.tvUseYn)).setText("Y".equals(getStringVal(item, "useyn")) ? "O" : "X");
+            ((TextView) view.findViewById(R.id.tvCode)).setText(getStringVal(item, "code"));
+            ((TextView) view.findViewById(R.id.tvCodeNm)).setText(getStringVal(item, "cdnm"));
+            ((TextView) view.findViewById(R.id.tvUseYn)).setText("Y".equals(getStringVal(item, "useyn")) ? "O" : "X");
 
-            return v;
+            return view;
         }
     }
 }

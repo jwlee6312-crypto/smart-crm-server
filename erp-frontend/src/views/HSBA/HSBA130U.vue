@@ -1,8 +1,8 @@
 <!--
 	=============================================================
-	프로그램명	: 거래 배송처 등록 (HSBA130U)
+	프로그램명	: 거래 주소록 등록 (HSBA130U)
 	작성일자	: 2025.02.27
-	설명        : 영업/구매 거래처 배송지 마스터 관리 (Tab 키 순항 및 Alt 단축키 지원)
+	설명        : 영업/구매 거래처 주소록 마스터 관리 (Tab 키 순항 및 Alt 단축키 지원)
 	=============================================================
 -->
 
@@ -15,11 +15,15 @@
     <div class="erp-header d-flex justify-content-between align-items-center border-bottom bg-white py-1 px-3 sticky-top shadow-sm flex-shrink-0">
       <div class="fw-bold text-dark d-flex align-items-center" style="font-size: 13px;">
         <i class="bi bi-truck me-2 text-primary"></i>
-        기본정보 > <span class="text-primary fw-bolder">거래 배송처 등록 (HSBA130U)</span>
+        기본정보 > <span class="text-primary fw-bolder">거래 주소록 등록 (HSBA130U)</span>
       </div>
       <div class="btn-group-erp d-flex gap-1">
         <button class="btn-erp btn-init" @click="initialize(false)" title="Alt+N: 초기화">초기화(N)</button>
         <button class="btn-erp btn-search" @click="searchcustomers" title="Alt+F: 조회">조회(F)</button>
+        <button class="btn-erp btn-geo" @click="batchUpdateGeocode" :disabled="isGeocoding" title="위경도 없는 항목 자동 일괄 지오코딩">
+          <span v-if="isGeocoding" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+          {{ isGeocoding ? '업데이트 중...' : '위경도일괄업데이트' }}
+        </button>
         <button class="btn-erp btn-save" @click="save" title="Alt+S: 저장">저장(S)</button>
       </div>
     </div>
@@ -42,7 +46,7 @@
       <!-- 🅱️ 배송처 정보 입력 영역 (HSOD100U 스타일 및 탭키 순차 순항) -->
       <div class="card border shadow-sm overflow-hidden flex-shrink-0">
         <div class="card-header py-1 px-3 border-bottom d-flex align-items-center justify-content-between" style="background-color: #f0f7ff !important;">
-          <span class="fw-bold small text-primary"><i class="bi bi-pencil-square me-1"></i> 배송처 정보 입력</span>
+          <span class="fw-bold small text-primary"><i class="bi bi-pencil-square me-1"></i> 주소 정보 입력</span>
           <div class="d-flex gap-2 align-items-center">
             <span v-if="masterdata.actkind === 'U0'" class="badge bg-warning text-dark" style="font-size: 10px;">수정 모드 ({{ masterdata.custcd }} - 순번: {{ masterdata.trancd }})</span>
             <span v-else class="badge bg-primary" style="font-size: 10px;">신규 등록</span>
@@ -51,10 +55,11 @@
         <div class="card-body p-0 bg-white">
           <table class="erp-table-dense w-100">
             <colgroup>
-              <col style="width: 100px;" /><col  style="width: 100px;"/>
-              <col style="width: 100px;" /><col  style="width: 200px;" />
-              <col style="width: 100px;" /><col  style="width: 400px;"/>
-              <col style="width: 100px;" /><col  style="width: 100px;"/>
+              <col style="width: 90px;" /><col style="width: 130px;"/>
+              <col style="width: 90px;" /><col style="width: 130px;" />
+              <col style="width: 90px;" /><col style="width: 130px;"/>
+              <col style="width: 90px;" /><col style="width: 130px;"/>
+              <col style="width: 90px;" /><col style="width: 80px;"/>
             </colgroup>
             <tbody>
               <tr>
@@ -67,27 +72,26 @@
                   </div>
                 </td>
                 <th class="required bg-light text-center">주&nbsp;&nbsp;&nbsp;&nbsp;소</th>
-                <td colspan="3">
+                <td colspan="5">
                   <AddressPopupForm v-model:postno="masterdata.postno" v-model:address="masterdata.address" v-model:d_address="masterdata.address_detail" tabindex="6" active />
                 </td>
               </tr>
               <tr>
-                <th class="bg-light text-center">지&nbsp;&nbsp;&nbsp;&nbsp;역</th>
+                <th class="bg-light text-center">위&nbsp;&nbsp;&nbsp;&nbsp;도</th>
                 <td>
-                  <select v-model="masterdata.area" class="form-select form-select-sm" tabindex="7">
-                    <option v-for="opt in areaoptions" :key="opt.codecd" :value="opt.codecd">{{ opt.codenm }}</option>
-                  </select>
+                  <input v-model="masterdata.latitude" type="text" class="form-control form-control-sm" tabindex="7" placeholder="자동계산" />
+                </td>
+                <th class="bg-light text-center">경&nbsp;&nbsp;&nbsp;&nbsp;도</th>
+                <td>
+                  <input v-model="masterdata.longitude" type="text" class="form-control form-control-sm" tabindex="8" placeholder="자동계산" />
                 </td>
                 <th class="bg-light text-center">담 당 자</th>
                 <td>
-                  <input v-model="masterdata.damdang" type="text" class="form-control form-control-sm" tabindex="8" maxlength="30" />
+                  <input v-model="masterdata.damdang" type="text" class="form-control form-control-sm" tabindex="9" maxlength="30" />
                 </td>
-                <th class="bg-light text-center">연 락 처</th>
+                <th class="bg-light text-center">전화번호</th>
                 <td>
-                  <div class="d-flex gap-1">
-                    <input v-model="masterdata.telno" type="text" class="form-control form-control-sm" tabindex="9" placeholder="전화" maxlength="30" />
-                    <input v-model="masterdata.email" type="text" class="form-control form-control-sm" tabindex="10" placeholder="이메일" maxlength="50" style="ime-mode:inactive" />
-                  </div>
+                  <input v-model="masterdata.telno" type="text" class="form-control form-control-sm" tabindex="10" maxlength="30" />
                 </td>
                 <th class="bg-light text-center">사용여부</th>
                 <td>
@@ -109,20 +113,20 @@
             <i class="bi bi-building me-1"></i> 거래처 목록
           </div>
           <div class="card-body p-0 flex-grow-1 bg-white overflow-hidden d-flex flex-column">
-              <div ref="custgridelement" class="tabulator-instance flex-grow-1" tabindex="12"></div>
+              <div ref="custgridelement" class="tabulator-instance flex-grow-1" tabindex="11"></div>
           </div>
         </div>
 
-        <!-- 우측: 배송처 내역 목록 -->
+        <!-- 우측: 주소록 내역 목록 -->
         <div class="card border shadow-sm flex-grow-1 d-flex flex-column overflow-hidden">
           <div class="card-header bg-white py-1 px-3 border-bottom d-flex align-items-center justify-content-between flex-shrink-0">
             <span class="fw-bold small text-dark d-flex align-items-center">
-              <i class="bi bi-grid-3x3-gap-fill me-2 text-primary"></i> 배송처 설정 내역
+              <i class="bi bi-grid-3x3-gap-fill me-2 text-primary"></i> 주소록 설정 내역
               <span v-if="selectedcustname" class="badge bg-primary-subtle text-primary border border-primary-subtle ms-2">{{ selectedcustname }}</span>
             </span>
           </div>
             <div class="card-body p-0 flex-grow-1 bg-white overflow-hidden d-flex flex-column">
-                <div ref="trangridelement" class="tabulator-instance flex-grow-1" tabindex="13"></div>
+                <div ref="trangridelement" class="tabulator-instance flex-grow-1" tabindex="12"></div>
             </div>
         </div>
       </div>
@@ -156,10 +160,10 @@ const firstFocusRef = ref<HTMLInputElement | null>(null)
 const searchdata = reactive({ qcustnm: '' })
 const masterdata = reactive<any>({
   actkind: 'A0', cmpycd: authstore.cmpycd, custcd: '', custnm: '', trancd: '',
-  area: '000', postno: '', address: '', address_detail: '', damdang: '', telno: '', email: '', useyn: 'Y'
+  postno: '', address: '', address_detail: '', damdang: '', telno: '', email: '', useyn: 'Y',
+  latitude: '', longitude: ''
 })
 
-const areaoptions = ref<any[]>([])
 const selectedcustname = ref('')
 const custgridelement = ref<HTMLElement | null>(null)
 const trangridelement = ref<HTMLElement | null>(null)
@@ -199,9 +203,12 @@ const initgrids = () => {
       columnDefaults: { headerSort: false, headerHozAlign: "center", hozAlign: "center", vertAlign: "middle" },
       columns: [
         { title: "순번", field: "trancd", width: 60 },
-        { title: "담당자", field: "damdang", width: 200 },
-        { title: "전화번호", field: "telno", width: 200 },
-        { title: "주소", field: "address", minWidth: 300, hozAlign: "left" },
+        { title: "담당자", field: "damdang", width: 120 },
+        { title: "전화번호", field: "telno", width: 130 },
+        { title: "위도", field: "latitude", width: 110 },
+        { title: "경도", field: "longitude", width: 110 },
+        { title: "주소", field: "address", minWidth: 250, hozAlign: "left" },
+        { title: "상세 주소", field: "d_address", minWidth: 150, hozAlign: "left" },
         { title: "사용", field: "useyn", width: 80, hozAlign: "center",  editor: true,
           formatter: (cell) => {
             const val = String(cell.getValue() || '').trim().toUpperCase();
@@ -225,21 +232,11 @@ const initgrids = () => {
 }
 
 // 3. 기능 구현
-async function fetchoptions() {
-  try {
-    const res = await api.post('/hs00/HS00_000S_STR', { gubun: 'AR', cmpycd: authstore.cmpycd });
-    areaoptions.value = res.data.map((n: any) => {
-      return { codecd: String(n.code || n.codecd || '').trim(), codenm: String(n.cdnm || n.codenm || '').trim() }
-    })
-    if (areaoptions.value.length === 0) areaoptions.value = [{ codecd: '000', codenm: '없음' }]
-  } catch (e) {}
-}
-
 async function searchcustomers() {
   try {
     const res = await api.post('/hsba/HSBA_130U_STR', {
       actkind: 'S1', cmpycd: authstore.cmpycd, custcd: '', custnm: searchdata.qcustnm || '',
-      trancd: '', area: '', postno: '', address: '', damdang: '', telno: '', email: '', useyn: '', userid: authstore.userid
+      trancd: '', area: '', postno: '', address: '', d_address: '', damdang: '', telno: '', email: '', useyn: '', userid: authstore.userid
     })
     custgrid?.setData(res.data || []); trangrid?.clearData(); selectedcustname.value = ''
   } catch (e) { valerterror('조회 실패') }
@@ -249,10 +246,27 @@ async function fetchdeliverylist() {
   try {
     const res = await api.post('/hsba/HSBA_130U_STR', {
       actkind: 'S2', cmpycd: authstore.cmpycd, custcd: masterdata.custcd,
-      custnm: '', trancd: '', area: '', postno: '', address: '', damdang: '', telno: '', email: '', useyn: '', userid: authstore.userid
+      custnm: '', trancd: '', area: '', postno: '', address: '', d_address: '', damdang: '', telno: '', email: '', useyn: '', userid: authstore.userid
     })
     trangrid?.setData(res.data || [])
   } catch (e) { valerterror('내역 조회 실패') }
+}
+
+const isGeocoding = ref(false)
+
+async function batchUpdateGeocode() {
+  if (!confirm('위경도 좌표가 없는 모든 배송처 주소를 대상으로 자동 일괄 업데이트를 수행하시겠습니까? (다소 시간이 걸릴 수 있습니다)')) return
+  isGeocoding.value = true
+  valert('⏳ 위경도 일괄 업데이트를 진행 중입니다... 잠시만 기다려주세요.')
+  try {
+    const res = await api.post('/hsba/batch-geocode', { cmpycd: authstore.cmpycd })
+    valert('✅ ' + (res.data?.msg || '위경도 일괄 업데이트가 성공적으로 완료되었습니다.'))
+    if (masterdata.custcd) fetchdeliverylist()
+  } catch (e) {
+    valerterror('❌ 위경도 일괄 업데이트 중 오류가 발생했습니다.')
+  } finally {
+    isGeocoding.value = false
+  }
 }
 
 async function save() {
@@ -274,7 +288,7 @@ async function save() {
 
 function initialize(keepcust = false) {
   const cd = masterdata.custcd; const nm = masterdata.custnm; resetform(masterdata)
-  Object.assign(masterdata, { actkind: 'A0', cmpycd: authstore.cmpycd, area: '000', useyn: 'Y' })
+  Object.assign(masterdata, { actkind: 'A0', cmpycd: authstore.cmpycd, useyn: 'Y', latitude: '', longitude: '' })
   if (keepcust) { masterdata.custcd = cd; masterdata.custnm = nm } else { selectedcustname.value = ''; trangrid?.clearData() }
   nextTick(() => firstFocusRef.value?.focus())
 }
@@ -306,7 +320,6 @@ function handleGlobalShortcuts(e: KeyboardEvent) {
 
 onMounted(async () => {
   window.addEventListener('keydown', handleGlobalShortcuts)
-  await fetchoptions()
   nextTick(() => { initgrids(); searchcustomers(); firstFocusRef.value?.focus() })
 })
 
@@ -316,7 +329,10 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.tabulator-instance { width:!important; background-color: #fff; }
 .tabulator-instance { width: 100% !important; background-color: #fff; }
+.btn-geo { background-color: #6f42c1; border-color: #6f42c1; color: #fff; height: 28px; padding: 0 12px; font-size: 12px; font-weight: 600; border-radius: 4px; transition: all 0.2s; }
+.btn-geo:hover { background-color: #59339d; border-color: #512da8; color: #fff; }
 input:focus, select:focus, button:focus {
   border-color: #005a9f !important;
   box-shadow: 0 0 0 0.2rem rgba(0, 90, 159, 0.25) !important;

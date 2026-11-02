@@ -31,7 +31,6 @@ public class MHABA910U extends BaseActivity {
     private TextView tvInnerNo, tvHpNo, tvUserSub;
     private Spinner spStatus, spRouting;
     private ApiService apiService;
-    private String cmpycd, userid;
 
     private final List<Map<String, String>> statusCodes = new ArrayList<>();
     private final List<Map<String, String>> routingCodes = new ArrayList<>();
@@ -42,10 +41,6 @@ public class MHABA910U extends BaseActivity {
         setContentView(R.layout.activity_mhaba910u);
 
         if (getSupportActionBar() != null) getSupportActionBar().hide();
-
-        SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
-        cmpycd = prefs.getString("cmpycd", "COIT");
-        userid = prefs.getString("userId", "");
 
         apiService = RetrofitClient.getApiService();
 
@@ -121,7 +116,7 @@ public class MHABA910U extends BaseActivity {
 
     private void selectSpinner(Spinner sp, List<Map<String, String>> data, String code) {
         for (int i = 0; i < data.size(); i++) {
-            if (data.get(i).get("code").equals(code)) {
+            if (code != null && code.equals(data.get(i).get("code"))) {
                 sp.setSelection(i); break;
             }
         }

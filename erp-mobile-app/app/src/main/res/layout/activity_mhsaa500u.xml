@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#F0F2F5"
+    android:importantForAutofill="noExcludeDescendants"
+    tools:ignore="HardcodedText,ContentDescription,LabelFor,TextFields,RtlSymmetry,RtlHardcoded">
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#FFFFFF"
+        android:padding="10dp"
+        android:elevation="4dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/tvHeaderTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="주간 영업보고 (MHSAA500U)"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#333333"/>
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnAuto"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:layout_marginEnd="4dp"
+            android:background="@drawable/bg_button_gradient_orange"
+            android:paddingHorizontal="8dp"
+            android:text="자동생성"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp"
+            android:textStyle="bold"/>
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnSave"
+            android:layout_width="52dp"
+            android:layout_height="32dp"
+            android:background="@drawable/bg_button_gradient"
+            android:text="저장"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp"
+            android:textStyle="bold"/>
+    </LinearLayout>
+
+    <!-- Filter Bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="8dp"
+        android:background="#FFFFFF"
+        android:layout_marginHorizontal="8dp"
+        android:layout_marginTop="6dp"
+        android:elevation="2dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="6dp">
+
+            <TextView
+                android:layout_width="70dp"
+                android:layout_height="wrap_content"
+                android:text="영업사원"
+                android:textSize="12sp"
+                android:textColor="#333333"
+                android:textStyle="bold"/>
+
+            <Spinner
+                android:id="@+id/spSalesman"
+                android:layout_width="match_parent"
+                android:layout_height="34dp"
+                android:background="@drawable/bg_input_field"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="6dp">
+
+            <TextView
+                android:layout_width="70dp"
+                android:layout_height="wrap_content"
+                android:text="주차식별자"
+                android:textSize="12sp"
+                android:textColor="#333333"
+                android:textStyle="bold"/>
+
+            <EditText
+                android:id="@+id/etWeekId"
+                android:layout_width="0dp"
+                android:layout_height="34dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_input_field"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:textSize="12sp"
+                android:inputType="text"
+                android:text="2026-W43"/>
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnSearch"
+                android:layout_width="60dp"
+                android:layout_height="34dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_button_gradient_gray"
+                android:text="조회"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="70dp"
+                android:layout_height="wrap_content"
+                android:text="대상기간"
+                android:textSize="12sp"
+                android:textColor="#333333"
+                android:textStyle="bold"/>
+
+            <EditText
+                android:id="@+id/etSdate"
+                android:layout_width="0dp"
+                android:layout_height="34dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_input_field"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:textSize="11sp"
+                android:inputType="text"
+                android:text="20261019"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="~"
+                android:paddingHorizontal="4dp"
+                android:textColor="#333333"/>
+
+            <EditText
+                android:id="@+id/etEdate"
+                android:layout_width="0dp"
+                android:layout_height="34dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_input_field"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:textSize="11sp"
+                android:inputType="text"
+                android:text="20261025"/>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Scrollable Editors -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="8dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Section 1 -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="1. 지난주 주요 실적 및 상담 이력"
+                android:textSize="12sp"
+                android:textColor="#0D6EFD"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp"/>
+            <EditText
+                android:id="@+id/etLastWeekPerf"
+                android:layout_width="match_parent"
+                android:layout_height="160dp"
+                android:background="@drawable/bg_input_field"
+                android:gravity="top"
+                android:padding="8dp"
+                android:textSize="11sp"
+                android:textColor="#333333"
+                android:fontFamily="monospace"
+                android:layout_marginBottom="12dp"
+                android:inputType="textMultiLine"/>
+
+            <!-- Section 2 -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="2. 금주(다음주) 방문 및 미팅 예정 계획"
+                android:textSize="12sp"
+                android:textColor="#198754"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp"/>
+            <EditText
+                android:id="@+id/etNextWeekPlan"
+                android:layout_width="match_parent"
+                android:layout_height="160dp"
+                android:background="@drawable/bg_input_field"
+                android:gravity="top"
+                android:padding="8dp"
+                android:textSize="11sp"
+                android:textColor="#333333"
+                android:fontFamily="monospace"
+                android:layout_marginBottom="12dp"
+                android:inputType="textMultiLine"/>
+
+            <!-- Section 3 -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="3. 특이사항 및 건의사항"
+                android:textSize="12sp"
+                android:textColor="#DC3545"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp"/>
+            <EditText
+                android:id="@+id/etIssuesComments"
+                android:layout_width="match_parent"
+                android:layout_height="100dp"
+                android:background="@drawable/bg_input_field"
+                android:gravity="top"
+                android:padding="8dp"
+                android:textSize="11sp"
+                android:textColor="#333333"
+                android:fontFamily="monospace"
+                android:inputType="textMultiLine"/>
+
+        </LinearLayout>
+    </ScrollView>
+
+</LinearLayout>

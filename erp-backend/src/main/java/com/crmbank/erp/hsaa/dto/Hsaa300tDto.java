@@ -42,6 +42,10 @@ public class Hsaa300tDto {
     private String hpno;
     private String custtel;
     private String usernm;
+    private String actionItem;
+    private String actionStatus;
+    private String nextMeetDt;
+    private String nextMeetAgenda;
     private String addtime;
     private String updtime;
     private String updemp;

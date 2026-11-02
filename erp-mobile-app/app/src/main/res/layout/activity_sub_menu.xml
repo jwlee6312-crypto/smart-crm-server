@@ -3,14 +3,14 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#FFFFFF">
+    android:background="#F8FAFC">
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvSubMenu"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
-        android:paddingBottom="24dp"
+        android:padding="12dp"
         android:overScrollMode="never" />
 
 </LinearLayout>

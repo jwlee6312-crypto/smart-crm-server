@@ -2,7 +2,6 @@ package com.crmbank.erp.mobile.hsaa;
 
 import android.app.DatePickerDialog;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -45,27 +44,23 @@ public class MHSAA100U extends BaseActivity {
     private TextView tvStart, tvEnd;
     private EditText etSearch;
     private Spinner spUser;
-    private ListView lvMaster;
     private MasterAdapter adapter;
     private final List<Map<String, Object>> masterList = new ArrayList<>();
     private final List<Map<String, Object>> userList = new ArrayList<>();
     private ApiService apiService;
-    private String cmpycd;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_mhsaa100u);
 
-        SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
-        cmpycd = prefs.getString("cmpycd", "coit").trim();
         apiService = RetrofitClient.getApiService();
 
         tvStart = findViewById(R.id.tvStartDate);
         tvEnd = findViewById(R.id.tvEndDate);
         etSearch = findViewById(R.id.etSchCustNm);
         spUser = findViewById(R.id.spUser);
-        lvMaster = findViewById(R.id.lvMasterList);
+        ListView lvMaster = findViewById(R.id.lvMasterList);
 
         adapter = new MasterAdapter();
         lvMaster.setAdapter(adapter);
@@ -103,9 +98,7 @@ public class MHSAA100U extends BaseActivity {
             if (d != null) cal.setTime(d);
         } catch (Exception ignored) {}
 
-        new DatePickerDialog(this, (view, y, m, d) -> {
-            tv.setText(String.format(Locale.getDefault(), "%d-%02d-%02d", y, m + 1, d));
-        }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show();
+        new DatePickerDialog(this, (view, y, m, d) -> tv.setText(String.format(Locale.getDefault(), "%d-%02d-%02d", y, m + 1, d)), cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show();
     }
 
     private void loadUsers() {
@@ -161,8 +154,10 @@ public class MHSAA100U extends BaseActivity {
     private String getStringVal(Map<String, Object> map, String key) {
         if (map == null) return "";
         Object val = map.get(key.toLowerCase());
-        if (val == null) val = map.get(key.toUpperCase());
-        return val != null ? String.valueOf(val).trim() : "";
+        if (val == null) {
+            val = map.get(key.toUpperCase());
+        }
+        return val != null ? val.toString().trim() : "";
     }
 
     @Override protected String getProgramTitle() { return "영업활동 관리"; }
@@ -172,11 +167,12 @@ public class MHSAA100U extends BaseActivity {
         private final DecimalFormat df = new DecimalFormat("#,###");
 
         @Override public int getCount() { return masterList.size(); }
-        @Override public Object getItem(int p) { return masterList.get(p); }
-        @Override public long getItemId(int p) { return p; }
-        @Override public View getView(int p, View v, ViewGroup pr) {
-            if (v == null) v = LayoutInflater.from(MHSAA100U.this).inflate(R.layout.item_mhsaa100u, pr, false);
-            Map<String, Object> item = masterList.get(p);
+        @Override public Object getItem(int position) { return masterList.get(position); }
+        @Override public long getItemId(int position) { return position; }
+        @Override public View getView(int position, View convertView, ViewGroup parent) {
+            View v = convertView;
+            if (v == null) v = LayoutInflater.from(MHSAA100U.this).inflate(R.layout.item_mhsaa100u, parent, false);
+            Map<String, Object> item = masterList.get(position);
 
             ((TextView) v.findViewById(R.id.tvCustNm)).setText(getStringVal(item, "custnm"));
             ((TextView) v.findViewById(R.id.tvSalesTitle)).setText(getStringVal(item, "salestitle"));
@@ -195,11 +191,15 @@ public class MHSAA100U extends BaseActivity {
 
             TextView tvState = v.findViewById(R.id.tvState);
             tvState.setText(getStringVal(item, "statenm"));
-            // 상태별 색상 처리 (예: 성공 900이면 녹색 등)
+            
             String state = getStringVal(item, "state");
-            if ("900".equals(state)) tvState.setBackgroundResource(R.drawable.bg_button_gradient_green);
-            else if ("910".equals(state) || "930".equals(state)) tvState.setBackgroundResource(R.drawable.bg_button_gradient_orange);
-            else tvState.setBackgroundResource(R.drawable.bg_status_badge);
+            if ("900".equals(state)) {
+                tvState.setBackgroundResource(R.drawable.bg_button_gradient_green);
+            } else if ("910".equals(state) || "930".equals(state)) {
+                tvState.setBackgroundResource(R.drawable.bg_button_gradient_orange);
+            } else {
+                tvState.setBackgroundResource(R.drawable.bg_status_badge);
+            }
 
             return v;
         }

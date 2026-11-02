@@ -49,7 +49,6 @@
                     on a.upmucd  = b.upmucd
                    and a.grpcd   = b.grpcd
                  where a.upmucd  = #{upmucd}
-                   and a.useyn   = 'Y'
                    and ifnull(a.mpgmid,'') != ''
                  order by b.dspord, a.dspord
             </when>

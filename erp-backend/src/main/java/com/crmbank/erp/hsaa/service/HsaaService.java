@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -84,6 +86,9 @@ public class HsaaService {
         
         // 시스템 날짜 설정
         if (master.getAddtime() == null || master.getAddtime().isEmpty()) master.setAddtime(curYmd);
+        if (master.getLastmtdt() == null || master.getLastmtdt().isEmpty()) {
+            master.setLastmtdt(master.getAddtime());
+        }
         master.setUpdtime(curYmd);
 
         // 데이터 길이 초과 방지를 위한 안전 처리
@@ -188,7 +193,54 @@ public class HsaaService {
             diary.setSer(String.format("%03d", hsaaMapper.nextDiarySer(diary)));
             hsaaMapper.insertDiary(diary);
         } else {
+            Hsaa300tDto oldDiary = hsaaMapper.selectDiary(diary);
+            if (oldDiary != null && oldDiary.getNextMeetDt() != null && !oldDiary.getNextMeetDt().trim().isEmpty()) {
+                String oldDt = cleanDate(oldDiary.getNextMeetDt());
+                String newDt = cleanDate(diary.getNextMeetDt());
+                if (newDt == null || !oldDt.equals(newDt)) {
+                    Map<String, Object> delParams = new HashMap<>();
+                    delParams.put("cmpycd", diary.getCmpycd());
+                    delParams.put("userid", diary.getUserid());
+                    delParams.put("salesid", diary.getSalesid());
+                    delParams.put("plan_dt", oldDt);
+                    hsaaMapper.deleteManualVisitPlan(delParams);
+                }
+            }
             hsaaMapper.updateDiary(diary);
+        }
+
+        // 2. 만약 next_meet_dt(다음 미팅 예정일)가 입력되었다면 hsaa_700t_tbl에 수동 등록(plan_source='M')으로 자동 Sync
+        if (diary.getNextMeetDt() != null && !diary.getNextMeetDt().trim().isEmpty()) {
+            Map<String, Object> manualPlan = new HashMap<>();
+            manualPlan.put("cmpycd", diary.getCmpycd());
+            manualPlan.put("userid", diary.getUserid());
+            manualPlan.put("plan_dt", cleanDate(diary.getNextMeetDt()));
+            manualPlan.put("salesid", diary.getSalesid());
+            manualPlan.put("custcd", diary.getCustcd());
+
+            Hsaa200tDto masterReq = new Hsaa200tDto();
+            masterReq.setCmpycd(diary.getCmpycd());
+            masterReq.setSalesid(diary.getSalesid());
+            Hsaa200tDto master = hsaaMapper.selectSalesMaster(masterReq);
+            if (master != null) {
+                manualPlan.put("custnm", master.getCustnm());
+                manualPlan.put("salestitle", master.getSalestitle() != null ? master.getSalestitle() : diary.getNextMeetAgenda());
+                manualPlan.put("import_nm", "등급 " + (master.getImportrank() != null ? master.getImportrank() : "200"));
+                manualPlan.put("succrate", master.getSuccrate());
+                manualPlan.put("lastmtdt", diary.getContdt());
+                manualPlan.put("address", master.getAddress());
+                manualPlan.put("d_address", master.getD_address());
+            } else {
+                manualPlan.put("custnm", "거래처");
+                manualPlan.put("salestitle", diary.getNextMeetAgenda() != null ? diary.getNextMeetAgenda() : "상담 후속 미팅");
+                manualPlan.put("import_nm", "등급 200");
+                manualPlan.put("succrate", "50");
+                manualPlan.put("lastmtdt", diary.getContdt());
+                manualPlan.put("address", "");
+                manualPlan.put("d_address", "");
+            }
+            manualPlan.put("plan_source", "M");
+            hsaaMapper.upsertVisitPlan(manualPlan);
         }
 
         // 1. 단계 변동 처리 및 마스터 업데이트
@@ -273,6 +325,15 @@ public class HsaaService {
 
     @Transactional
     public void deleteDiary(Hsaa300tDto dto) {
+        Hsaa300tDto oldDiary = hsaaMapper.selectDiary(dto);
+        if (oldDiary != null && oldDiary.getNextMeetDt() != null && !oldDiary.getNextMeetDt().trim().isEmpty()) {
+            Map<String, Object> delParams = new HashMap<>();
+            delParams.put("cmpycd", dto.getCmpycd());
+            delParams.put("userid", oldDiary.getUserid() != null ? oldDiary.getUserid() : dto.getUserid());
+            delParams.put("salesid", oldDiary.getSalesid());
+            delParams.put("plan_dt", cleanDate(oldDiary.getNextMeetDt()));
+            hsaaMapper.deleteManualVisitPlan(delParams);
+        }
         hsaaMapper.deleteDiary(dto);
     }
 
@@ -554,5 +615,216 @@ public class HsaaService {
         String s = val.toString().toLowerCase();
         if ("true".equals(s) || "y".equals(s) || "1".equals(s)) return "Y";
         return "N";
+    }
+
+    public List<Map<String, Object>> getVisitPlan(String cmpycd, String ym, String userid) {
+        return hsaaMapper.selectExistingVisitPlan(cmpycd, userid, ym);
+    }
+
+    @Transactional
+    public List<Map<String, Object>> generateVisitPlan(String cmpycd, String ym, String userid, int dailyCapa) {
+        if (ym == null || ym.length() != 6) {
+            throw new IllegalArgumentException("기준년월(ym)은 YYYYMM 형식이어야 합니다.");
+        }
+        if (userid == null || userid.trim().isEmpty()) {
+            throw new IllegalArgumentException("영업사원 ID(userid)가 누락되었습니다.");
+        }
+        if (dailyCapa <= 0) dailyCapa = 4;
+
+        List<Map<String, Object>> rawDeals = hsaaMapper.selectActiveDealsForVisitPlan(cmpycd, userid);
+        if (rawDeals == null || rawDeals.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<Map<String, Object>> deals = new ArrayList<>();
+        for (Map<String, Object> d : rawDeals) {
+            String salesid = String.valueOf(d.getOrDefault("salesid", "")).trim();
+            if (salesid.isEmpty()) continue;
+
+            if (d.get("import") == null || String.valueOf(d.get("import")).trim().isEmpty()) {
+                d.put("import", "200");
+            }
+            if (d.get("succrate") == null) {
+                d.put("succrate", 50.0);
+            }
+            if (d.get("custnm") == null || String.valueOf(d.get("custnm")).trim().isEmpty()) {
+                d.put("custnm", "미지정 거래처");
+            }
+            if (d.get("salestitle") == null || String.valueOf(d.get("salestitle")).trim().isEmpty()) {
+                d.put("salestitle", "영업건 (" + salesid + ")");
+            }
+            if (d.get("lastmtdt") == null || String.valueOf(d.get("lastmtdt")).trim().isEmpty()) {
+                d.put("lastmtdt", new java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault()).format(new Date()));
+            }
+            deals.add(d);
+        }
+
+        List<Map<String, Object>> cycles = hsaaMapper.selectImportanceCycles(cmpycd);
+        Map<String, Integer> cycleMap = new HashMap<>();
+        Map<String, String> gradeNameMap = new HashMap<>();
+        for (Map<String, Object> c : cycles) {
+            String code = String.valueOf(c.getOrDefault("code", ""));
+            String remark = String.valueOf(c.getOrDefault("remark", "30"));
+            int days = 30;
+            try { days = Integer.parseInt(remark.replaceAll("[^0-9]", "")); } catch (Exception ignored) {}
+            cycleMap.put(code, days);
+            gradeNameMap.put(code, "등급 " + code);
+        }
+
+        List<Map<String, Object>> holidays = hsaaMapper.selectHolidaysForMonth(cmpycd, ym);
+        java.util.Set<String> holidaySet = new java.util.HashSet<>();
+        for (Map<String, Object> h : holidays) {
+            holidaySet.add(String.valueOf(h.get("holi_dt")));
+        }
+
+        List<String> workDays = new ArrayList<>();
+        try {
+            int year = Integer.parseInt(ym.substring(0, 4));
+            int month = Integer.parseInt(ym.substring(4, 6));
+            java.util.Calendar cal = java.util.Calendar.getInstance();
+            cal.set(year, month - 1, 1);
+            int maxDay = cal.getActualMaximum(java.util.Calendar.DAY_OF_MONTH);
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault());
+
+            for (int d = 1; d <= maxDay; d++) {
+                cal.set(year, month - 1, d);
+                int dayOfWeek = cal.get(java.util.Calendar.DAY_OF_WEEK);
+                if (dayOfWeek == java.util.Calendar.SATURDAY || dayOfWeek == java.util.Calendar.SUNDAY) continue;
+                String dateStr = sdf.format(cal.getTime());
+                if (!holidaySet.contains(dateStr)) {
+                    workDays.add(dateStr);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error generating work days: {}", e.getMessage());
+        }
+
+        if (workDays.isEmpty()) {
+            throw new IllegalStateException("해당 월에 유효한 영업일(Working Day)이 존재하지 않습니다.");
+        }
+
+        for (Map<String, Object> deal : deals) {
+            String imp = String.valueOf(deal.getOrDefault("import", "200"));
+            int cycleDays = cycleMap.getOrDefault(imp, 30);
+            deal.put("import_nm", gradeNameMap.getOrDefault(imp, "등급 " + imp));
+
+            double succrate = 50.0;
+            try { succrate = Double.parseDouble(String.valueOf(deal.getOrDefault("succrate", "50"))); } catch (Exception ignored) {}
+
+            double score = cycleDays * (succrate / 100.0);
+            deal.put("_score", score);
+        }
+
+        deals.sort((a, b) -> Double.compare((Double) b.get("_score"), (Double) a.get("_score")));
+
+        List<Map<String, Object>> generatedPlan = new ArrayList<>();
+        int dayIdx = 0;
+        int countToday = 0;
+
+        for (Map<String, Object> deal : deals) {
+            if (dayIdx >= workDays.size()) break;
+            String targetDate = workDays.get(dayIdx);
+
+            Map<String, Object> planItem = new HashMap<>();
+            planItem.put("cmpycd", cmpycd);
+            planItem.put("userid", userid);
+            planItem.put("plan_dt", targetDate);
+            planItem.put("salesid", deal.get("salesid"));
+            planItem.put("custcd", deal.get("custcd"));
+            planItem.put("custnm", deal.get("custnm"));
+            planItem.put("salestitle", deal.get("salestitle"));
+            planItem.put("import_nm", deal.get("import_nm"));
+            planItem.put("succrate", deal.get("succrate"));
+            planItem.put("lastmtdt", deal.get("lastmtdt"));
+            planItem.put("address", deal.get("address"));
+            generatedPlan.add(planItem);
+
+            countToday++;
+            if (countToday >= dailyCapa) {
+                countToday = 0;
+                dayIdx++;
+            }
+        }
+
+        return generatedPlan;
+    }
+
+    @Transactional
+    public void confirmVisitPlan(Map<String, Object> payload, String cmpycd) {
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> plans = (List<Map<String, Object>>) payload.get("plans");
+        if (plans == null) return;
+
+        String userid = String.valueOf(payload.getOrDefault("userid", ""));
+        for (Map<String, Object> plan : plans) {
+            plan.put("cmpycd", cmpycd);
+            plan.put("userid", userid);
+            hsaaMapper.upsertVisitPlan(plan);
+        }
+    }
+
+    public Map<String, Object> getWeeklyReport(String cmpycd, String userid, String weekid) {
+        Map<String, Object> report = hsaaMapper.selectWeeklyReport(cmpycd, userid, weekid);
+        if (report == null) {
+            report = new HashMap<>();
+            report.put("cmpycd", cmpycd);
+            report.put("userid", userid);
+            report.put("week_id", weekid);
+            report.put("last_week_perf", "");
+            report.put("next_week_plan", "");
+            report.put("issues_comments", "");
+            report.put("status", "1");
+        }
+        return report;
+    }
+
+    public Map<String, Object> autoGenerateWeeklyReport(String cmpycd, String userid, String weekId, String sdate, String edate, String nextSdate, String nextEdate) {
+        List<Map<String, Object>> lastDiaries = hsaaMapper.selectLastWeekConsultations(cmpycd, userid, sdate, edate);
+        StringBuilder sbPerf = new StringBuilder();
+        sbPerf.append("■ [지난주 주요 영업 실적 및 상담 이력]\n");
+        if (lastDiaries.isEmpty()) {
+            sbPerf.append("- 등록된 상담 이력이 없습니다.\n");
+        } else {
+            int idx = 1;
+            for (Map<String, Object> d : lastDiaries) {
+                sbPerf.append(idx++).append(". [").append(d.get("contdt")).append("] ")
+                      .append(d.get("custnm")).append(" - ").append(d.get("salestitle"))
+                      .append("\n   - 상담내용: ").append(d.get("diary_content") != null ? d.get("diary_content").toString().replaceAll("\n", " ") : "")
+                      .append("\n   - 후속조치: ").append(d.get("action_item") != null ? d.get("action_item") : "없음")
+                      .append(" (").append("1".equals(d.get("action_status")) ? "완료" : "미해결").append(")\n");
+            }
+        }
+
+        List<Map<String, Object>> nextPlans = hsaaMapper.selectNextWeekVisitPlans(cmpycd, userid, nextSdate, nextEdate);
+        StringBuilder sbPlan = new StringBuilder();
+        sbPlan.append("■ [금주/다음주 방문 및 미팅 예정 계획]\n");
+        if (nextPlans.isEmpty()) {
+            sbPlan.append("- 예정된 방문 계획이 없습니다.\n");
+        } else {
+            int idx = 1;
+            for (Map<String, Object> p : nextPlans) {
+                sbPlan.append(idx++).append(". [").append(p.get("plan_dt")).append("] ")
+                      .append(p.get("custnm")).append(" - ").append(p.get("salestitle"))
+                      .append(" (주소: ").append(p.get("address")).append(")\n");
+            }
+        }
+
+        Map<String, Object> generated = new HashMap<>();
+        generated.put("cmpycd", cmpycd);
+        generated.put("userid", userid);
+        generated.put("week_id", weekId);
+        generated.put("sdate", sdate);
+        generated.put("edate", edate);
+        generated.put("last_week_perf", sbPerf.toString());
+        generated.put("next_week_plan", sbPlan.toString());
+        generated.put("issues_comments", "■ 특이사항 및 건의사항\n- 특이사항 없음");
+        generated.put("status", "1");
+        return generated;
+    }
+
+    @Transactional
+    public void saveWeeklyReport(Map<String, Object> payload, String cmpycd) {
+        payload.put("cmpycd", cmpycd);
+        hsaaMapper.upsertWeeklyReport(payload);
     }
 }

@@ -43,6 +43,9 @@
            <if test="custnm != null and custnm != ''">
            AND custnm LIKE CONCAT('%', #{custnm}, '%')
            </if>
+           <if test="frdt != null and frdt != '' and todt != null and todt != ''">
+           AND quatymd BETWEEN REPLACE(#{frdt}, '-', '') AND REPLACE(#{todt}, '-', '')
+           </if>
          ORDER BY quatym DESC, quatno DESC
     </select>
 

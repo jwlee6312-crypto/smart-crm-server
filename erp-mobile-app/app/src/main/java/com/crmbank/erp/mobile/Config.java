@@ -18,12 +18,12 @@ public class Config {
     // [3] 실제 서버 테스트 (서버 172.30.1.11 / 내부망 혹은 외부망)
     // 현재는 도메인과 외부 포트(18080)를 사용하는 배포 모드를 기본으로 설정했습니다.
     public static final String SERVER_IP = "smart-erp.duckdns.org";
-    public static final String SERVER_PORT = "18080";
+    public static final String SERVER_PORT = "18090";
 
     // =====================================================================
 
     // 🌐 웹뷰 화면용 포트 (필요 시)
-    public static final String WEB_PORT = "18888";
+    public static final String WEB_PORT = "18889";
 
     // 💡 뿌리 주소에 /api/ 를 기본으로 포함합니다.
     public static final String BASE_URL = "http://" + SERVER_IP + ":" + SERVER_PORT + "/api/";

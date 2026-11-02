@@ -125,7 +125,7 @@ const { resetForm: resetform } = useFormReset()
 
 const searchform = reactive({ upmucd: '' })
 const formdata = reactive({
-	actkind: 'S0', upmucd: '', grpcd: '', grpnm: '', dspord: '1', useyn: 'Y', cmpycd: authstore.cmpycd, userid: authstore.userid
+	actkind: 'S0', upmucd: '', grpcd: '', grpnm: '', dspord: '1', useyn: 'Y', cmpycd: authstore.cmpycd, userid: authstore.userid, usergrp: authstore.usergrp
 })
 
 const upmuoptions = ref<any[]>([])
@@ -177,7 +177,7 @@ async function deletedata() {
 }
 
 function initialize() {
-	resetform(formdata); formdata.upmucd = searchform.upmucd; formdata.actkind = 'S0'; formdata.useyn = 'Y'; formdata.dspord = '1'; formdata.cmpycd = authstore.cmpycd;
+	resetform(formdata); formdata.upmucd = searchform.upmucd; formdata.actkind = 'S0'; formdata.useyn = 'Y'; formdata.dspord = '1'; formdata.cmpycd = authstore.cmpycd; formdata.userid = authstore.userid; formdata.usergrp = authstore.usergrp;
 }
 
 watch(() => searchform.upmucd, (newval) => { formdata.upmucd = newval })

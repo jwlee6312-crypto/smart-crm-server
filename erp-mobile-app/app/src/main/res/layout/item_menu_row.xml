@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="2dp"
+    android:layout_marginVertical="6dp"
+    app:cardCornerRadius="14dp"
+    app:cardElevation="2dp"
+    app:cardBackgroundColor="@color/white">
+
+    <LinearLayout
+        android:id="@+id/layoutCardBg"
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:orientation="horizontal"
+        android:paddingHorizontal="18dp"
+        android:gravity="center_vertical"
+        android:background="?attr/selectableItemBackground">
+
+        <!-- Icon Container -->
+        <FrameLayout
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_menu_icon_container"
+            android:layout_marginEnd="16dp">
+            <ImageView
+                android:id="@+id/ivMenuIcon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_launcher_foreground"
+                app:tint="@color/primary"/>
+        </FrameLayout>
+
+        <!-- Menu Title -->
+        <TextView
+            android:id="@+id/tvMenuName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="영업 활동"
+            android:textColor="#0F172A"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:maxLines="1"
+            android:ellipsize="end"/>
+
+        <!-- Arrow indicator -->
+        <ImageView
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@android:drawable/ic_media_play"
+            app:tint="#94A3B8"/>
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

@@ -26,34 +26,23 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="회의록 등록 (HMET100U)"
+                android:text="회의록 조회 (HMET100U)"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="#333333"/>
 
             <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/btnNew"
-                android:layout_width="55dp"
+                android:id="@+id/btnSearch"
+                android:layout_width="65dp"
                 android:layout_height="36dp"
-                android:layout_marginEnd="4dp"
-                android:background="@drawable/bg_button_gradient_gray"
-                android:text="신규"
-                android:textColor="#FFFFFF"
-                android:textSize="12sp"
-                android:textStyle="bold"/>
-
-            <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/btnSave"
-                android:layout_width="55dp"
-                android:layout_height="36dp"
-                android:background="@drawable/bg_button_gradient_orange"
-                android:text="저장"
+                android:background="@drawable/bg_button_gradient"
+                android:text="조회"
                 android:textColor="#FFFFFF"
                 android:textSize="12sp"
                 android:textStyle="bold"/>
         </LinearLayout>
 
-        <!-- Form Container -->
+        <!-- Form Container (View Only) -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -106,8 +95,8 @@
                     android:layout_height="38dp"
                     android:layout_marginStart="6dp"
                     android:background="@drawable/bg_input_field"
-                    android:hint="1400"
-                    android:inputType="number"
+                    android:focusable="false"
+                    android:enabled="false"
                     android:paddingStart="8dp"
                     android:textSize="12sp"/>
             </LinearLayout>
@@ -134,7 +123,8 @@
                     android:layout_height="38dp"
                     android:layout_weight="1"
                     android:background="@drawable/bg_input_field"
-                    android:hint="예: 본사 3층 대회의실"
+                    android:focusable="false"
+                    android:enabled="false"
                     android:paddingStart="8dp"
                     android:textSize="12sp"/>
 
@@ -153,7 +143,8 @@
                     android:layout_height="38dp"
                     android:layout_marginStart="6dp"
                     android:background="@drawable/bg_input_field"
-                    android:hint="주관자"
+                    android:focusable="false"
+                    android:enabled="false"
                     android:paddingStart="8dp"
                     android:textSize="12sp"/>
             </LinearLayout>
@@ -180,12 +171,13 @@
                     android:layout_height="38dp"
                     android:layout_weight="1"
                     android:background="@drawable/bg_input_field"
-                    android:hint="회의 제목을 입력하세요"
+                    android:focusable="false"
+                    android:enabled="false"
                     android:paddingStart="8dp"
                     android:textSize="12sp"/>
             </LinearLayout>
 
-            <!-- 녹취 파일 첨부 및 AI 자동 변환 테스트 버튼 -->
+            <!-- 녹취 파일 첨부 정보 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -208,21 +200,10 @@
                     android:layout_weight="1"
                     android:background="@drawable/bg_input_field"
                     android:gravity="center_vertical"
-                    android:hint="첨부된 녹취 파일 없음"
+                    android:text="첨부된 녹취 파일 없음"
                     android:paddingStart="8dp"
                     android:textSize="12sp"
                     android:textColor="#666666"/>
-
-                <androidx.appcompat.widget.AppCompatButton
-                    android:id="@+id/btnSttSimulate"
-                    android:layout_width="wrap_content"
-                    android:layout_height="38dp"
-                    android:layout_marginStart="6dp"
-                    android:background="@drawable/bg_button_gradient_orange"
-                    android:text="🎙️ 녹취→회의록 자동변환"
-                    android:textColor="#FFFFFF"
-                    android:textSize="11sp"
-                    android:textStyle="bold"/>
             </LinearLayout>
 
             <!-- STT 원본 텍스트 -->
@@ -242,7 +223,8 @@
                 android:layout_height="90dp"
                 android:background="@drawable/bg_input_field"
                 android:gravity="top"
-                android:hint="녹취 파일 변환 시 STT 원본 텍스트가 여기에 표시됩니다."
+                android:focusable="false"
+                android:enabled="false"
                 android:padding="8dp"
                 android:textSize="11sp"
                 android:layout_marginBottom="8dp"/>
@@ -263,7 +245,8 @@
                 android:layout_height="90dp"
                 android:background="@drawable/bg_input_field"
                 android:gravity="top"
-                android:hint="AI 회의 요약 결과가 여기에 표시됩니다."
+                android:focusable="false"
+                android:enabled="false"
                 android:padding="8dp"
                 android:textSize="11sp"
                 android:layout_marginBottom="8dp"/>
@@ -284,7 +267,8 @@
                 android:layout_height="120dp"
                 android:background="@drawable/bg_input_field"
                 android:gravity="top"
-                android:hint="회의 내용 및 결정 사항을 입력하세요."
+                android:focusable="false"
+                android:enabled="false"
                 android:padding="8dp"
                 android:textSize="12sp"/>
         </LinearLayout>

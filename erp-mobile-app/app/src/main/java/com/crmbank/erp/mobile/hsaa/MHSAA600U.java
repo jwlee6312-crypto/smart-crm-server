@@ -119,7 +119,7 @@ public class MHSAA600U extends BaseActivity {
             Map<String, Object> map = new HashMap<>();
             String mm = String.format(Locale.getDefault(), "%02d", i);
             map.put("yymm", yyyy + mm);
-            map.put("mm", i + "월");
+            map.put("mm", mm);
             map.put("planamt", 0);
             map.put("contactcnt", 0);
             map.put("consultcnt", 0);
@@ -185,11 +185,17 @@ public class MHSAA600U extends BaseActivity {
             }
 
             Map<String, Object> item = items.get(position);
-            String mmStr = item.get("mm") != null ? String.valueOf(item.get("mm")) : ((position + 1) + "월");
+            String mmStr = item.get("mm") != null ? String.valueOf(item.get("mm")) : String.format(Locale.getDefault(), "%02d", (position + 1));
             holder.tvMonth.setText(mmStr);
 
-            Object planAmt = item.get("planamt");
-            holder.etPlanAmt.setText(planAmt != null ? String.valueOf(planAmt) : "0");
+            Object planAmtObj = item.get("planamt");
+            long planAmt = 0L;
+            if (planAmtObj instanceof Number) {
+                planAmt = ((Number) planAmtObj).longValue();
+            } else if (planAmtObj != null) {
+                try { planAmt = Long.parseLong(String.valueOf(planAmtObj).replaceAll("[^0-9]", "")); } catch (Exception ignored) {}
+            }
+            holder.etPlanAmt.setText(planAmt > 0 ? String.format(Locale.getDefault(), "%,d", planAmt) : "");
 
             Object contactCnt = item.get("contactcnt");
             holder.etContactCnt.setText(contactCnt != null ? String.valueOf(contactCnt) : "0");
@@ -200,7 +206,10 @@ public class MHSAA600U extends BaseActivity {
             holder.etPlanAmt.setOnFocusChangeListener((v, hasFocus) -> {
                 if (!hasFocus) {
                     try {
-                        item.put("planamt", Long.parseLong(holder.etPlanAmt.getText().toString().trim()));
+                        String raw = holder.etPlanAmt.getText().toString().replaceAll("[^0-9]", "");
+                        long val = raw.isEmpty() ? 0L : Long.parseLong(raw);
+                        item.put("planamt", val);
+                        holder.etPlanAmt.setText(val > 0 ? String.format(Locale.getDefault(), "%,d", val) : "");
                     } catch (Exception e) {
                         item.put("planamt", 0L);
                     }

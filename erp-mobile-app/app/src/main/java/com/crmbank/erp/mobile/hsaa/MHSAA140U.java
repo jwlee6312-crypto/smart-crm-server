@@ -1,10 +1,10 @@
 package com.crmbank.erp.mobile.hsaa;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -40,6 +40,8 @@ import retrofit2.Response;
 /**
  * 🚀 [MHSAA140U] 단계변동 등록
  */
+@SuppressLint({"SetTextI18n", "SimpleDateFormat"})
+@SuppressWarnings({"unchecked", "unused"})
 public class MHSAA140U extends BaseActivity {
 
     private EditText etSalesTitle, etRemark;
@@ -87,8 +89,8 @@ public class MHSAA140U extends BaseActivity {
 
         findViewById(R.id.btnReset).setOnClickListener(v -> initializeForm());
         findViewById(R.id.btnSave).setOnClickListener(v -> save());
-        findViewById(R.id.btnDelete).setVisibility(View.GONE); // 단계변동은 삭제 없음
-        findViewById(R.id.btnSalesSearch).setOnClickListener(v -> openHelp("SALES"));
+        findViewById(R.id.btnDelete).setVisibility(View.GONE);
+        findViewById(R.id.btnSalesSearch).setOnClickListener(v -> openHelp());
         
         tvChngDt.setOnClickListener(v -> showDatePicker(tvChngDt));
     }
@@ -105,17 +107,17 @@ public class MHSAA140U extends BaseActivity {
             @Override public void onResponse(@NonNull Call<ApiResponse<List<Map<String, Object>>>> c, @NonNull Response<ApiResponse<List<Map<String, Object>>>> r) {
                 if (r.isSuccessful() && r.body() != null) {
                     stateCodeList.clear(); stateCodeList.addAll(r.body().getData());
-                    setupSpinner(spBfState, stateCodeList, "codenm");
-                    setupSpinner(spState, stateCodeList, "codenm");
+                    setupSpinner(spBfState, stateCodeList);
+                    setupSpinner(spState, stateCodeList);
                 }
             }
             @Override public void onFailure(@NonNull Call<ApiResponse<List<Map<String, Object>>>> c, @NonNull Throwable t) {}
         });
     }
 
-    private void setupSpinner(Spinner sp, List<Map<String, Object>> data, String key) {
+    private void setupSpinner(Spinner sp, List<Map<String, Object>> data) {
         List<String> items = new ArrayList<>();
-        for (Map<String, Object> d : data) items.add(getStringVal(d, key));
+        for (Map<String, Object> d : data) items.add(getStringVal(d, "codenm"));
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.item_spinner, items);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         sp.setAdapter(adapter);
@@ -129,7 +131,7 @@ public class MHSAA140U extends BaseActivity {
                     if (mst != null) {
                         etSalesTitle.setText(getStringVal(mst, "salestitle"));
                         bfStateCode = getStringVal(mst, "state");
-                        setSpinnerSelection(spBfState, stateCodeList, "codecd", bfStateCode);
+                        setSpinnerSelection(spBfState, stateCodeList, bfStateCode);
                         fetchStageHistory();
                     }
                 }
@@ -166,13 +168,13 @@ public class MHSAA140U extends BaseActivity {
     private void loadStageDetail(Map<String, Object> item) {
         tvChngDt.setText(formatDate(getStringVal(item, "chngdt")));
         etRemark.setText(getStringVal(item, "remark"));
-        setSpinnerSelection(spBfState, stateCodeList, "codecd", getStringVal(item, "bfstate"));
-        setSpinnerSelection(spState, stateCodeList, "codecd", getStringVal(item, "state"));
+        setSpinnerSelection(spBfState, stateCodeList, getStringVal(item, "bfstate"));
+        setSpinnerSelection(spState, stateCodeList, getStringVal(item, "state"));
     }
 
-    private void setSpinnerSelection(Spinner sp, List<Map<String, Object>> list, String key, String val) {
+    private void setSpinnerSelection(Spinner sp, List<Map<String, Object>> list, String val) {
         for (int i = 0; i < list.size(); i++) {
-            if (getStringVal(list.get(i), key).equals(val)) {
+            if (getStringVal(list.get(i), "codecd").equals(val)) {
                 sp.setSelection(i);
                 break;
             }
@@ -212,7 +214,7 @@ public class MHSAA140U extends BaseActivity {
         });
     }
 
-    private void openHelp(String type) {
+    private void openHelp() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_hsaa_search, null);
         builder.setView(dialogView);
@@ -237,12 +239,13 @@ public class MHSAA140U extends BaseActivity {
             @Override public Object getItem(int p) { return list.get(p); }
             @Override public long getItemId(int p) { return p; }
             @Override public View getView(int p, View v, ViewGroup pr) {
-                if (v == null) v = getLayoutInflater().inflate(R.layout.item_hsaa_pop, pr, false);
+                View view = v;
+                if (view == null) view = getLayoutInflater().inflate(R.layout.item_hsaa_pop, pr, false);
                 Map<String, Object> item = list.get(p);
-                ((TextView) v.findViewById(R.id.tvPopCustNm)).setText(getStringVal(item, "custnm"));
-                ((TextView) v.findViewById(R.id.tvPopSalesTitle)).setText(getStringVal(item, "salestitle"));
-                ((TextView) v.findViewById(R.id.tvPopAddTime)).setText(formatDate(getStringVal(item, "addtime")));
-                return v;
+                ((TextView) view.findViewById(R.id.tvPopCustNm)).setText(getStringVal(item, "custnm"));
+                ((TextView) view.findViewById(R.id.tvPopSalesTitle)).setText(getStringVal(item, "salestitle"));
+                ((TextView) view.findViewById(R.id.tvPopAddTime)).setText(formatDate(getStringVal(item, "addtime")));
+                return view;
             }
         };
         lv.setAdapter(adapter);
@@ -276,9 +279,7 @@ public class MHSAA140U extends BaseActivity {
 
     private void showDatePicker(TextView tv) {
         Calendar cal = Calendar.getInstance();
-        new DatePickerDialog(this, (view, y, m, d) -> {
-            tv.setText(String.format(Locale.getDefault(), "%d-%02d-%02d", y, m + 1, d));
-        }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show();
+        new DatePickerDialog(this, (view, y, m, d) -> tv.setText(String.format(Locale.getDefault(), "%d-%02d-%02d", y, m + 1, d)), cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show();
     }
 
     private String getStringVal(Map<String, Object> map, String key) {
@@ -288,7 +289,8 @@ public class MHSAA140U extends BaseActivity {
         return val != null ? String.valueOf(val).trim() : "";
     }
 
-    private String formatDate(String d) {
+    private String formatDate(String dateStr) {
+        String d = dateStr;
         if (d == null || d.isEmpty()) return "";
         if (d.contains(" ")) d = d.split(" ")[0];
         return d.length() == 8 ? String.format("%s-%s-%s", d.substring(0,4), d.substring(4,6), d.substring(6,8)) : d;

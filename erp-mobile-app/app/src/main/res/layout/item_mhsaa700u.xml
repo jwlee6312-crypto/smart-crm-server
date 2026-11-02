@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="#FFFFFF"
+    android:padding="10dp"
+    android:importantForAutofill="noExcludeDescendants"
+    tools:ignore="HardcodedText,ContentDescription,LabelFor,TextFields,RtlSymmetry,RtlHardcoded">
+
+    <!-- Top Row: Date & Importance -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="4dp">
+
+        <TextView
+            android:id="@+id/tvPlanDt"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="2026-10-30 (금)"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textColor="#0D6EFD"/>
+
+        <TextView
+            android:id="@+id/tvImport"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="등급 중"
+            android:textSize="10sp"
+            android:textColor="#6C757D"
+            android:background="#F8F9FA"
+            android:paddingHorizontal="4dp"
+            android:paddingVertical="1dp"/>
+    </LinearLayout>
+
+    <!-- Customer & Deal -->
+    <TextView
+        android:id="@+id/tvCustNm"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="거래처명"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:textColor="#212529"
+        android:layout_marginBottom="2dp"/>
+
+    <TextView
+        android:id="@+id/tvDealTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="영업건명"
+        android:textSize="11sp"
+        android:textColor="#495057"
+        android:layout_marginBottom="4dp"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/tvAddress"
+        android:text="주소"
+        android:textSize="10sp"
+        android:textColor="#6C757D"/>
+
+</LinearLayout>

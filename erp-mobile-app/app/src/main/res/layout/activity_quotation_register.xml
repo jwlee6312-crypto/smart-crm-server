@@ -38,6 +38,17 @@
             android:textStyle="bold"/>
 
         <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnMail"
+            android:layout_width="65dp"
+            android:layout_height="36dp"
+            android:layout_marginEnd="4dp"
+            android:background="@drawable/bg_button_gradient_green"
+            android:text="메일전송"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp"
+            android:textStyle="bold"/>
+
+        <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnSave"
             android:layout_width="65dp"
             android:layout_height="36dp"
@@ -267,6 +278,68 @@
             android:textColor="#FFFFFF"
             android:textSize="11sp"
             android:textStyle="bold"/>
+    </LinearLayout>
+
+    <!-- Table Header Bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="36dp"
+        android:orientation="horizontal"
+        android:background="#E0E0E0"
+        android:gravity="center_vertical"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:layout_marginHorizontal="8dp"
+        android:layout_marginBottom="4dp">
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.2"
+            android:text="품명"
+            android:gravity="center"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="#333333"/>
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.6"
+            android:text="수량"
+            android:gravity="center"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="#333333"/>
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.9"
+            android:text="단가"
+            android:gravity="center"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="#333333"/>
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.0"
+            android:text="공급가"
+            android:gravity="center"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="#333333"/>
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.8"
+            android:text="부가세"
+            android:gravity="center"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="#333333"/>
+         <TextView
+            android:layout_width="28dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"/>
     </LinearLayout>
 
     <!-- Detail ListView -->

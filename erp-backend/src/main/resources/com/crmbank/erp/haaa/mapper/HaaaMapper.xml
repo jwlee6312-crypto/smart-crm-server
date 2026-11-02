@@ -90,10 +90,23 @@
          WHERE pgmid = #{pgmid}
     </update>
 
-    <delete id="HAAA_800U_DELETE" parameterType="map">
-        DELETE FROM haaa800t_tbl WHERE pgmid = #{pgmid};
-        DELETE FROM haba940t_tbl WHERE pgmid = #{pgmid};
+    <delete id="HAAA_800U_DELETE">
+        DELETE a, b, c, d
+        FROM haaa800t_tbl a
+        LEFT JOIN haba930t_tbl b ON b.cmpycd = #{cmpycd} and b.pgmid = #{pgmid}
+        LEFT JOIN haba935t_tbl c ON c.cmpycd = #{cmpycd} and c.pgmid = #{pgmid}
+        LEFT JOIN haba940t_tbl d ON d.cmpycd = #{cmpycd} and d.pgmid = #{pgmid}
+        WHERE a.pgmid = #{pgmid}
     </delete>
+
+<!--    <delete id="HAAA_800U_DELETE" parameterType="map">-->
+<!--        BEGIN-->
+<!--        DELETE FROM haaa800t_tbl WHERE pgmid = #{pgmid};-->
+<!--        DELETE FROM haba930t_tbl WHERE cmpycd = #{cmpycd} and pgmid = #{pgmid};-->
+<!--        DELETE FROM haba935t_tbl WHERE cmpycd = #{cmpycd} and pgmid = #{pgmid};-->
+<!--        DELETE FROM haba940t_tbl WHERE cmpycd = #{cmpycd} and pgmid = #{pgmid};-->
+<!--        END;-->
+<!--    </delete>-->
 
 
     <!-- HAAA_810U_STR Procedures -->
@@ -128,10 +141,20 @@
          WHERE upmucd = #{upmucd} AND grpcd = #{grpcd}
     </update>
 
-    <delete id="HAAA_810U_DELETE_CASCADE" parameterType="map">
-        DELETE FROM haaa810t_tbl WHERE upmucd = #{upmucd} AND grpcd = #{grpcd};
-        DELETE FROM haba930t_tbl WHERE upmucd = #{upmucd} AND grpcd = #{grpcd};
-        DELETE FROM haba940t_tbl WHERE upmucd = #{upmucd} AND grpcd = #{grpcd};
+    <delete id="HAAA_810U_DELETE_CASCADE">
+        DELETE a, b, c, d
+        FROM haaa810t_tbl a
+        LEFT JOIN haba930t_tbl b ON a.upmucd = b.upmucd AND a.grpcd = b.grpcd AND b.cmpycd = #{cmpycd}
+        LEFT JOIN haba935t_tbl c ON a.upmucd = c.upmucd AND a.grpcd = c.grpcd AND c.cmpycd = #{cmpycd}
+        LEFT JOIN haba940t_tbl d ON a.upmucd = d.upmucd AND a.grpcd = d.grpcd AND d.cmpycd = #{cmpycd}
+        WHERE a.upmucd = #{upmucd} AND a.grpcd = #{grpcd}
     </delete>
+
+<!--    <delete id="HAAA_810U_DELETE_CASCADE" parameterType="map">-->
+<!--        DELETE FROM haaa810t_tbl WHERE upmucd = #{upmucd} AND grpcd = #{grpcd};-->
+<!--        DELETE FROM haba930t_tbl WHERE cmpycd = #{cmpycd} and upmucd = #{upmucd} AND grpcd = #{grpcd};-->
+<!--        DELETE FROM haba935t_tbl WHERE cmpycd = #{cmpycd} and upmucd = #{upmucd} AND grpcd = #{grpcd};-->
+<!--        DELETE FROM haba940t_tbl WHERE cmpycd = #{cmpycd} and upmucd = #{upmucd} AND grpcd = #{grpcd};-->
+<!--    </delete>-->
 
 </mapper>

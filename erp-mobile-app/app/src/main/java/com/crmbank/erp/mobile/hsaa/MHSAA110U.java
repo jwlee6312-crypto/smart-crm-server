@@ -1,10 +1,12 @@
 package com.crmbank.erp.mobile.hsaa;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.content.SharedPreferences;
-import android.graphics.Color;
 import android.os.Bundle;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -20,8 +22,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.crmbank.erp.mobile.ApiResponse;
 import com.crmbank.erp.mobile.ApiService;
@@ -47,6 +47,8 @@ import retrofit2.Response;
 /**
  * 🚀 [MHSAA110U] 영업건 등록/상세
  */
+@SuppressLint({"SetTextI18n", "SimpleDateFormat"})
+@SuppressWarnings({"unchecked", "unused"})
 public class MHSAA110U extends BaseActivity {
 
     private EditText etSalesId, etCustNm, etBossNm, etTelNo, etSalesTitle, etForeAmt, etSuccRate, etSalesRemark;
@@ -55,7 +57,7 @@ public class MHSAA110U extends BaseActivity {
     private LinearLayout llItemList;
     
     private ApiService apiService;
-    private String cmpycd, userid, deptcd, deptnm;
+    private String cmpycd, userid, deptcd;
     private String salesid = "";
     
     private final List<Map<String, Object>> userDataList = new ArrayList<>();
@@ -75,7 +77,6 @@ public class MHSAA110U extends BaseActivity {
         cmpycd = prefs.getString("cmpycd", "coit").trim();
         userid = prefs.getString("userId", "");
         deptcd = prefs.getString("deptcd", "");
-        deptnm = prefs.getString("deptnm", "");
 
         apiService = RetrofitClient.getApiService();
 
@@ -131,7 +132,7 @@ public class MHSAA110U extends BaseActivity {
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
                 if (!s.toString().equals(current)) {
                     etForeAmt.removeTextChangedListener(this);
-                    String cleanString = s.toString().replaceAll("[^\\d]", "");
+                    String cleanString = s.toString().replaceAll("\\D", "");
                     if (!cleanString.isEmpty()) {
                         double parsed = Double.parseDouble(cleanString);
                         String formatted = new DecimalFormat("#,###").format(parsed);
@@ -379,7 +380,7 @@ public class MHSAA110U extends BaseActivity {
         mst.put("salestitle", etSalesTitle.getText().toString());
         mst.put("addtime", tvAddTime.getText().toString().replace("-", ""));
         mst.put("foredt", tvForeDt.getText().toString().replace("-", ""));
-        mst.put("foreamt", etForeAmt.getText().toString().replaceAll("[^\\d]", ""));
+        mst.put("foreamt", etForeAmt.getText().toString().replaceAll("\\D", ""));
         mst.put("succrate", etSuccRate.getText().toString());
         mst.put("salesremark", etSalesRemark.getText().toString());
         
@@ -420,17 +421,21 @@ public class MHSAA110U extends BaseActivity {
     private void delete() {
         if (salesid.isEmpty()) return;
         new AlertDialog.Builder(this).setTitle("삭제 확인").setMessage("정말 삭제하시겠습니까?")
-            .setPositiveButton("예", (d, w) -> {
-                apiService.deleteHsaaMaster(salesid).enqueue(new Callback<ApiResponse<Object>>() {
-                    @Override public void onResponse(@NonNull Call<ApiResponse<Object>> c, @NonNull Response<ApiResponse<Object>> r) {
-                        Toast.makeText(MHSAA110U.this, "삭제되었습니다.", Toast.LENGTH_SHORT).show();
-                        finish();
-                    }
-                    @Override public void onFailure(@NonNull Call<ApiResponse<Object>> c, @NonNull Throwable t) {}
-                });
-            }).setNegativeButton("아니오", null).show();
+            .setPositiveButton("예", (d, w) -> performDelete())
+            .setNegativeButton("아니오", null).show();
     }
 
+    private void performDelete() {
+        apiService.deleteHsaaMaster(salesid).enqueue(new Callback<ApiResponse<Object>>() {
+            @Override public void onResponse(@NonNull Call<ApiResponse<Object>> c, @NonNull Response<ApiResponse<Object>> r) {
+                Toast.makeText(MHSAA110U.this, "삭제되었습니다.", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+            @Override public void onFailure(@NonNull Call<ApiResponse<Object>> c, @NonNull Throwable t) {}
+        });
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
     private void openHelp(String type) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_customer_search, null);
@@ -517,9 +522,7 @@ public class MHSAA110U extends BaseActivity {
             if (d != null) cal.setTime(d);
         } catch (Exception ignored) {}
 
-        new DatePickerDialog(this, (view, y, m, d) -> {
-            tv.setText(String.format(Locale.getDefault(), "%d-%02d-%02d", y, m + 1, d));
-        }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show();
+        new DatePickerDialog(this, (view, y, m, d) -> tv.setText(String.format(Locale.getDefault(), "%d-%02d-%02d", y, m + 1, d)), cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show();
     }
 
     private String getStringVal(Map<String, Object> map, String key) {

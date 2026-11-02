@@ -10,6 +10,7 @@ import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.ParameterMapping;
 import org.apache.ibatis.session.SqlSession;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -233,26 +234,116 @@ public class HsbaController {
 //        return ResponseEntity.ok(List.of(resultRow));
 //    }
 //
-//    @PostMapping("/HSBA_130U_STR")
-//    public ResponseEntity<?> callHSBA_130U_STR(@RequestBody Map<String, Object> params, HttpSession session) {
-//        injectSession(params, session);
-//        fillMissingParameters("HSBA_130U_STR", params);
-//        log.info("🏢 [Master SQL]: {}", buildPositionalSql("HSBA_130U_STR", params));
-//
-//        String actkind = String.valueOf(params.getOrDefault("actkind", "S0")).toUpperCase();
-//        List<Map<String, Object>> raw = hsbaMapper.HSBA_130U_STR(params);
-//
-//        if ("S2".equals(actkind) || "S0".equals(actkind) || "S1".equals(actkind) ) return ResponseEntity.ok(convertToLowerCaseKeys(raw));
-//
-//        if (raw == null || raw.isEmpty()) throw new RuntimeException("마스터 처리 결과가 없습니다.");
-//
-//        Map<String, Object> resultRow = mapToAlias(raw.getFirst(), "result", "msg");
-//        String code = String.valueOf(resultRow.get("result")).trim();
-//        if (!"OK".equals(code)) {
-//            throw new RuntimeException(String.valueOf(resultRow.get("msg")));
-//        }
-//        return ResponseEntity.ok(List.of(resultRow));
-//    }
+    @Transactional
+    @PostMapping("/HSBA_130U_STR")
+    public ResponseEntity<?> callHSBA_130U_STR(@RequestBody Map<String, Object> params, HttpSession session) {
+        injectSession(params, session);
+        String actkind = String.valueOf(params.getOrDefault("actkind", "S0")).toUpperCase();
+
+        if ("S0".equals(actkind) || "S2".equals(actkind)) {
+            List<Map<String, Object>> raw = hsbaMapper.HSBA_130U_SELECT(params);
+            return ResponseEntity.ok(convertToLowerCaseKeys(raw));
+        } else if ("S1".equals(actkind)) {
+            List<Map<String, Object>> raw = hsbaMapper.HSBA_130U_SELECT_CUST(params);
+            return ResponseEntity.ok(convertToLowerCaseKeys(raw));
+        } else if ("A0".equals(actkind) || "U0".equals(actkind)) {
+            String address = String.valueOf(params.getOrDefault("address", ""));
+            Map<String, Double> latLon = getLatLonFromAddress(address);
+            params.put("latitude", latLon.get("lat"));
+            params.put("longitude", latLon.get("lon"));
+
+            if ("A0".equals(actkind)) {
+                hsbaMapper.HSBA_130U_INSERT(params);
+            } else {
+                hsbaMapper.HSBA_130U_UPDATE(params);
+            }
+            return ResponseEntity.ok(List.of(Map.of("result", "OK", "msg", "정상적으로 작업이 되었습니다.")));
+        } else if ("D0".equals(actkind)) {
+            hsbaMapper.HSBA_130U_DELETE(params);
+            return ResponseEntity.ok(List.of(Map.of("result", "OK", "msg", "정상적으로 작업이 되었습니다.")));
+        }
+        return ResponseEntity.ok(List.of(Map.of("result", "OK", "msg", "성공")));
+    }
+
+    private Map<String, Double> getLatLonFromAddress(String address) {
+        Map<String, Double> coords = new HashMap<>();
+        coords.put("lat", 37.5665);
+        coords.put("lon", 126.9780);
+
+        if (address == null || address.trim().isEmpty()) {
+            return coords;
+        }
+
+        try {
+            String encodedAddr = java.net.URLEncoder.encode(address, java.nio.charset.StandardCharsets.UTF_8);
+            String urlStr = "https://nominatim.openstreetmap.org/search?format=json&q=" + encodedAddr;
+            java.net.URL url = new java.net.URL(urlStr);
+            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("User-Agent", "SmartERP-CRM/1.0");
+            conn.setConnectTimeout(3000);
+            conn.setReadTimeout(3000);
+
+            if (conn.getResponseCode() == 200) {
+                try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(conn.getInputStream(), java.nio.charset.StandardCharsets.UTF_8))) {
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) sb.append(line);
+
+                    String json = sb.toString();
+                    if (json.contains("\"lat\"") && json.contains("\"lon\"")) {
+                        int latIdx = json.indexOf("\"lat\":\"");
+                        if (latIdx != -1) {
+                            int start = latIdx + 7;
+                            int end = json.indexOf("\"", start);
+                            coords.put("lat", Double.parseDouble(json.substring(start, end)));
+                        }
+                        int lonIdx = json.indexOf("\"lon\":\"");
+                        if (lonIdx != -1) {
+                            int start = lonIdx + 7;
+                            int end = json.indexOf("\"", start);
+                            coords.put("lon", Double.parseDouble(json.substring(start, end)));
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("⚠️ Geocoding failed for address [{}]: {}", address, e.getMessage());
+        }
+        return coords;
+    }
+
+    @PostMapping("/batch-geocode")
+    public ResponseEntity<?> batchGeocode(@RequestBody Map<String, Object> params, HttpSession session) {
+        injectSession(params, session);
+        String cmpycd = String.valueOf(params.getOrDefault("cmpycd", ""));
+
+        List<Map<String, Object>> rows = hsbaMapper.selectUngeocodedAddresses(cmpycd);
+        int updatedCount = 0;
+
+        for (Map<String, Object> row : rows) {
+            String custcd = String.valueOf(row.getOrDefault("custcd", ""));
+            String trancd = String.valueOf(row.getOrDefault("trancd", ""));
+            String address = String.valueOf(row.getOrDefault("address", ""));
+
+            if (address.isEmpty()) continue;
+
+            Map<String, Double> latLon = getLatLonFromAddress(address);
+            Map<String, Object> updateParams = new HashMap<>();
+            updateParams.put("cmpycd", cmpycd);
+            updateParams.put("custcd", custcd);
+            updateParams.put("trancd", trancd);
+            updateParams.put("latitude", latLon.get("lat"));
+            updateParams.put("longitude", latLon.get("lon"));
+
+            hsbaMapper.updateLatLon(updateParams);
+            updatedCount++;
+
+            try { Thread.sleep(500); } catch (Exception ignored) {}
+        }
+
+        return ResponseEntity.ok(Map.of("result", "OK", "msg", updatedCount + "건의 위경도 좌표가 일괄 업데이트되었습니다."));
+    }
 //
 //    @PostMapping("/HSBA_140U_STR")
 //    public ResponseEntity<?> callHSBA_140U_STR(@RequestBody Map<String, Object> params, HttpSession session) {

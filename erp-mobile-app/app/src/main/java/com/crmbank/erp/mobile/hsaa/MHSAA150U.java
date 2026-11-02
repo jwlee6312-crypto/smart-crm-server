@@ -1,14 +1,16 @@
 package com.crmbank.erp.mobile.hsaa;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
-import android.view.LayoutInflater;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -34,6 +36,7 @@ import com.google.gson.Gson;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -53,6 +56,8 @@ import retrofit2.Response;
 /**
  * 🚀 [MHSAA150U] 영업문서 관리
  */
+@SuppressLint({"SetTextI18n", "SimpleDateFormat"})
+@SuppressWarnings({"unchecked", "unused"})
 public class MHSAA150U extends BaseActivity {
 
     private EditText etSalesTitle, etTitle, etFileName;
@@ -77,6 +82,7 @@ public class MHSAA150U extends BaseActivity {
                 if (result.getResultCode() == RESULT_OK && result.getData() != null) {
                     Bundle extras = result.getData().getExtras();
                     if (extras != null) {
+                        @SuppressWarnings("deprecation")
                         Bitmap bitmap = (Bitmap) extras.get("data");
                         processBitmap(bitmap);
                     }
@@ -125,7 +131,7 @@ public class MHSAA150U extends BaseActivity {
         findViewById(R.id.btnReset).setOnClickListener(v -> initializeForm());
         findViewById(R.id.btnSave).setOnClickListener(v -> save());
         findViewById(R.id.btnDelete).setVisibility(View.GONE);
-        findViewById(R.id.btnSalesSearch).setOnClickListener(v -> openHelp("SALES"));
+        findViewById(R.id.btnSalesSearch).setOnClickListener(v -> openHelp());
         
         tvAddTime.setOnClickListener(v -> showDatePicker(tvAddTime));
         findViewById(R.id.btnCamera).setOnClickListener(v -> cameraLauncher.launch(new Intent(MediaStore.ACTION_IMAGE_CAPTURE)));
@@ -147,16 +153,16 @@ public class MHSAA150U extends BaseActivity {
             @Override public void onResponse(@NonNull Call<ApiResponse<List<Map<String, Object>>>> c, @NonNull Response<ApiResponse<List<Map<String, Object>>>> r) {
                 if (r.isSuccessful() && r.body() != null) {
                     docGbCodeList.clear(); docGbCodeList.addAll(r.body().getData());
-                    setupSpinner(spDocGb, docGbCodeList, "codenm");
+                    setupSpinner(spDocGb, docGbCodeList);
                 }
             }
             @Override public void onFailure(@NonNull Call<ApiResponse<List<Map<String, Object>>>> c, @NonNull Throwable t) {}
         });
     }
 
-    private void setupSpinner(Spinner sp, List<Map<String, Object>> data, String key) {
+    private void setupSpinner(Spinner sp, List<Map<String, Object>> data) {
         List<String> items = new ArrayList<>();
-        for (Map<String, Object> d : data) items.add(getStringVal(d, key));
+        for (Map<String, Object> d : data) items.add(getStringVal(d, "codenm"));
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.item_spinner, items);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         sp.setAdapter(adapter);
@@ -208,16 +214,15 @@ public class MHSAA150U extends BaseActivity {
         etTitle.setText(getStringVal(item, "title"));
         etFileName.setText(getStringVal(item, "filename"));
         tvAddTime.setText(formatDate(getStringVal(item, "addtime")));
-        setSpinnerSelection(spDocGb, docGbCodeList, "codecd", getStringVal(item, "docgb"));
+        setSpinnerSelection(spDocGb, docGbCodeList, getStringVal(item, "docgb"));
         
-        // 이미지 미리보기 처리 (서버 URL이 필요한 경우 추가 로직 필요)
         ivPreview.setVisibility(View.GONE); 
         selectedFile = null; 
     }
 
-    private void setSpinnerSelection(Spinner sp, List<Map<String, Object>> list, String key, String val) {
+    private void setSpinnerSelection(Spinner sp, List<Map<String, Object>> list, String val) {
         for (int i = 0; i < list.size(); i++) {
-            if (getStringVal(list.get(i), key).equals(val)) {
+            if (getStringVal(list.get(i), "codecd").equals(val)) {
                 sp.setSelection(i);
                 break;
             }
@@ -234,23 +239,30 @@ public class MHSAA150U extends BaseActivity {
             etFileName.setText("camera_image.jpg");
             ivPreview.setImageBitmap(bitmap);
             ivPreview.setVisibility(View.VISIBLE);
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) {
+            Log.e("MHSAA150U", "Error processing bitmap", e);
+        }
     }
 
     private void processUri(Uri uri) {
         try {
-            // Simply update UI for now
             etFileName.setText("gallery_image.jpg");
             ivPreview.setImageURI(uri);
             ivPreview.setVisibility(View.VISIBLE);
             
-            // In a real app, copy URI stream to a temporary File for Retrofit upload
             selectedFile = new File(getExternalCacheDir(), "upload_temp.jpg");
-            FileOutputStream out = new FileOutputStream(selectedFile);
-            Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), uri);
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out);
-            out.flush(); out.close();
-        } catch (Exception e) { e.printStackTrace(); }
+            try (FileOutputStream out = new FileOutputStream(selectedFile);
+                 InputStream inputStream = getContentResolver().openInputStream(uri)) {
+                if (inputStream != null) {
+                    Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
+                    if (bitmap != null) {
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Log.e("MHSAA150U", "Error processing URI", e);
+        }
     }
 
     private void save() {
@@ -271,9 +283,9 @@ public class MHSAA150U extends BaseActivity {
         }
 
         String json = new Gson().toJson(doc);
-        RequestBody docBody = RequestBody.create(MediaType.parse("text/plain"), json);
+        RequestBody docBody = RequestBody.create(json, MediaType.parse("text/plain"));
         
-        RequestBody fileReqBody = RequestBody.create(MediaType.parse("image/*"), selectedFile);
+        RequestBody fileReqBody = RequestBody.create(selectedFile, MediaType.parse("image/*"));
         MultipartBody.Part filePart = MultipartBody.Part.createFormData("file", selectedFile.getName(), fileReqBody);
 
         apiService.saveHsaaDoc(docBody, filePart).enqueue(new Callback<ApiResponse<Object>>() {
@@ -287,7 +299,7 @@ public class MHSAA150U extends BaseActivity {
         });
     }
 
-    private void openHelp(String type) {
+    private void openHelp() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_hsaa_search, null);
         builder.setView(dialogView);
@@ -311,13 +323,18 @@ public class MHSAA150U extends BaseActivity {
             @Override public int getCount() { return list.size(); }
             @Override public Object getItem(int p) { return list.get(p); }
             @Override public long getItemId(int p) { return p; }
-            @Override public View getView(int p, View v, ViewGroup pr) {
-                if (v == null) v = getLayoutInflater().inflate(R.layout.item_hsaa_pop, pr, false);
+            @Override public View getView(int p, View convertView, ViewGroup pr) {
+                final View view;
+                if (convertView == null) {
+                    view = getLayoutInflater().inflate(R.layout.item_hsaa_pop, pr, false);
+                } else {
+                    view = convertView;
+                }
                 Map<String, Object> item = list.get(p);
-                ((TextView) v.findViewById(R.id.tvPopCustNm)).setText(getStringVal(item, "custnm"));
-                ((TextView) v.findViewById(R.id.tvPopSalesTitle)).setText(getStringVal(item, "salestitle"));
-                ((TextView) v.findViewById(R.id.tvPopAddTime)).setText(formatDate(getStringVal(item, "addtime")));
-                return v;
+                ((TextView) view.findViewById(R.id.tvPopCustNm)).setText(getStringVal(item, "custnm"));
+                ((TextView) view.findViewById(R.id.tvPopSalesTitle)).setText(getStringVal(item, "salestitle"));
+                ((TextView) view.findViewById(R.id.tvPopAddTime)).setText(formatDate(getStringVal(item, "addtime")));
+                return view;
             }
         };
         lv.setAdapter(adapter);
@@ -351,9 +368,7 @@ public class MHSAA150U extends BaseActivity {
 
     private void showDatePicker(TextView tv) {
         Calendar cal = Calendar.getInstance();
-        new DatePickerDialog(this, (view, y, m, d) -> {
-            tv.setText(String.format(Locale.getDefault(), "%d-%02d-%02d", y, m + 1, d));
-        }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show();
+        new DatePickerDialog(this, (view, y, m, d) -> tv.setText(String.format(Locale.getDefault(), "%d-%02d-%02d", y, m + 1, d)), cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show();
     }
 
     private String getStringVal(Map<String, Object> map, String key) {
@@ -363,7 +378,8 @@ public class MHSAA150U extends BaseActivity {
         return val != null ? String.valueOf(val).trim() : "";
     }
 
-    private String formatDate(String d) {
+    private String formatDate(String dateStr) {
+        String d = dateStr;
         if (d == null || d.isEmpty()) return "";
         if (d.contains(" ")) d = d.split(" ")[0];
         return d.length() == 8 ? String.format("%s-%s-%s", d.substring(0,4), d.substring(4,6), d.substring(6,8)) : d;

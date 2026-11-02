@@ -21,6 +21,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
+                android:gravity="center_vertical"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent">
@@ -40,6 +41,19 @@
                     android:textStyle="bold"
                     android:textColor="@color/core_amber"
                     android:letterSpacing="-0.03"/>
+
+                <!-- 🚀 미세한 구분 표시 뱃지 (스마트에피-CRM / 외부영업용) -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="FIELD CRM"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:textColor="#FFFFFF"
+                    android:background="@drawable/bg_status_badge"
+                    android:paddingHorizontal="6dp"
+                    android:paddingVertical="2dp"
+                    android:layout_marginStart="8dp"/>
             </LinearLayout>
 
             <androidx.appcompat.widget.AppCompatButton
@@ -71,51 +85,80 @@
             android:orientation="vertical"
             android:padding="20dp">
 
-            <!-- 🚀 User Profile Card (Compact Single Line) -->
+            <!-- 🚀 Expanded User Profile Card -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="3dp"
                 app:cardBackgroundColor="#FFFFFF"
-                android:layout_marginBottom="16dp">
+                android:layout_marginBottom="20dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:padding="10dp"
+                    android:padding="16dp"
                     android:gravity="center_vertical">
 
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@android:drawable/ic_menu_myplaces"
-                        app:tint="@color/primary"
-                        android:layout_marginEnd="8dp"/>
+                    <!-- Profile Avatar Placeholder -->
+                    <FrameLayout
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_circle_blue_light"
+                        android:layout_marginEnd="14dp">
+                        <ImageView
+                            android:layout_width="26dp"
+                            android:layout_height="26dp"
+                            android:layout_gravity="center"
+                            android:src="@android:drawable/ic_menu_myplaces"
+                            app:tint="@color/primary"/>
+                    </FrameLayout>
 
-                    <TextView
-                        android:id="@+id/tvUserSummary"
+                    <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Dept | User Name | Ext | Email"
-                        android:textSize="11sp"
-                        android:textColor="#333333"
-                        android:maxLines="1"
-                        android:ellipsize="end" />
+                        android:orientation="vertical">
 
+                        <TextView
+                            android:id="@+id/tvUserNameAndDept"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="이정우 | (주)코잇"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:textColor="#1E293B"
+                            android:layout_marginBottom="4dp"/>
+
+                        <TextView
+                            android:id="@+id/tvUserContact"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="HP: 010-3204-3901  |  내선: 101"
+                            android:textSize="12sp"
+                            android:textColor="#64748B"
+                            android:layout_marginBottom="2dp"/>
+
+                        <TextView
+                            android:id="@+id/tvUserEmail"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="jwlee@crmbank.co.kr"
+                            android:textSize="11sp"
+                            android:textColor="#94A3B8"/>
+                    </LinearLayout>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Business Modules"
+                android:text="영업활동 메뉴"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary"
-                android:layout_marginBottom="16dp"
+                android:layout_marginBottom="12dp"
                 android:layout_marginStart="4dp"/>
 
             <androidx.recyclerview.widget.RecyclerView
