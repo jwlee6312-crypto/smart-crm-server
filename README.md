@@ -21,3 +21,4 @@ AI의 도움 없이도 직접 관리하실 수 있도록 작성된 지침서입�
 3. [**이전 가이드 (MIGRATION.md)**](./MIGRATION.md): 주말 우분투 서버 이전 시 체크리스트.
 4. [**작업 흐름 (WORKFLOW.md)**](./WORKFLOW.md): 노트북 수정 사항을 서버에 반영하는 순서.
 # smart-erp-crm-server
+# smart-crm
