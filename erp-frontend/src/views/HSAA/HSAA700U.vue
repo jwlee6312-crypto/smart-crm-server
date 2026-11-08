@@ -2,7 +2,7 @@
 	=============================================================
 	프로그램명	: 영업활동 방문계획 자동수립 (HSAA700U)
 	작성일자	: 2026.10.28
-	설명        : 영업건 중요도(IMPORT), 확도(SUCCRATE), 최종접촉일(LASTMTDT), 공휴일(PD_HOLIDAY), 위·경도 동선 기반 자동 방문 계획 수립 및 캘린더 확정 (그리드 탭 + 월간 캘린더 탭 구조 지원)
+	설명        : 영업건 중요도(IMPORT), 확도(SUCCRATE), 최종접촉일(LASTMTDT), 방문주기, 공휴일(PD_HOLIDAY), 위·경도 동선 최적화 기반 자동 방문 계획 수립 및 캘린더 확정
 	=============================================================
 -->
 
@@ -21,24 +21,9 @@
         <button class="btn-erp btn-init" @click="initialize">초기화</button>
         <button class="btn-erp btn-search" @click="fetchPlan">계획조회</button>
         <button class="btn-erp btn-auto" @click="generateAutoPlan">자동생성(A)</button>
-        <button class="btn-erp btn-alarm" @click="requestWebNotification" title="브라우저 푸시 알림 켜기"><i class="bi bi-bell me-1"></i>알람설정</button>
         <button class="btn-erp btn-save" @click="confirmAndSync">일정확정(S)</button>
       </div>
     </div>
-
-    <!-- 💡 탭 네비게이션 -->
-    <ul class="nav nav-tabs px-3 pt-2 bg-white border-bottom flex-shrink-0" role="tablist">
-      <li class="nav-item" role="presentation">
-        <button class="nav-link py-1 px-3 small fw-bold" :class="{active: activeTab === 'grid'}" @click="activeTab = 'grid'">
-          <i class="bi bi-table me-1"></i> 방문계획 수립 및 조정 (그리드)
-        </button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link py-1 px-3 small fw-bold" :class="{active: activeTab === 'calendar'}" @click="activeTab = 'calendar'">
-          <i class="bi bi-calendar-month me-1"></i> 월간 캘린더 조회
-        </button>
-      </li>
-    </ul>
 
     <!-- 💡 2. 메인 컨텐츠 영역 -->
     <div class="flex-grow-1 overflow-hidden p-2 d-flex flex-column gap-2 bg-light main-content-wrapper">
@@ -48,35 +33,27 @@
         <div class="card-body p-0 bg-white">
           <table class="erp-table-dense w-100">
             <colgroup>
-              <col style="width: 8%;" /><col style="width: 15%;" />
-              <col style="width: 8%;" /><col style="width: 15%;" />
-              <col style="width: 8%;" /><col style="width: 22%;" />
-              <col style="width: 10%;" /><col style="width: 14%;" />
+              <col style="width: 10%;" /><col style="width: 20%;" />
+              <col style="width: 10%;" /><col style="width: 20%;" />
+              <col style="width: 10%;" /><col style="width: 30%;" />
             </colgroup>
             <tbody>
               <tr>
-                <th class="text-center bg-light">계획구분</th>
-                <td>
-                  <select v-model="filter.viewType" class="form-select form-select-sm">
-                    <option value="MONTH">월간 방문계획</option>
-                    <option value="WEEK">주간 방문계획</option>
-                  </select>
-                </td>
-                <th class="text-center bg-light border-start">기준년월</th>
+                <th class="text-center bg-light">기준년월</th>
                 <td>
                   <input v-model="filter.ym" type="text" class="form-control form-control-sm" placeholder="YYYYMM" maxlength="6" @keyup.enter="fetchPlan" />
                 </td>
                 <th class="text-center bg-light border-start">영업사원</th>
                 <td>
-                  <select v-model="filter.userid" class="form-select form-select-sm" @change="fetchPlan">
+                  <select v-model="filter.userid" class="form-select form-select-sm">
                     <option v-for="user in salesmanList" :key="user.userid" :value="user.userid">{{ user.usernm }}</option>
                   </select>
                 </td>
                 <th class="text-center bg-light border-start">일일 방문 CAPA</th>
                 <td>
-                  <div class="d-flex align-items-center gap-1">
-                    <input v-model.number="filter.dailyCapa" type="number" class="form-control form-control-sm" min="1" max="10" />
-                    <span class="text-muted x-small">건</span>
+                  <div class="d-flex align-items-center gap-2">
+                    <input v-model.number="filter.dailyCapa" type="number" class="form-control form-control-sm" style="width: 80px;" min="1" max="10" />
+                    <span class="text-muted x-small">(일일 최대 방문 건수)</span>
                   </div>
                 </td>
               </tr>
@@ -85,48 +62,49 @@
         </div>
       </div>
 
-      <!-- [탭 1] 그리드 뷰 -->
-      <div v-if="activeTab === 'grid'" class="card border shadow-sm flex-grow-1 d-flex flex-column overflow-hidden">
-        <div class="card-header bg-white py-1 px-3 border-bottom d-flex align-items-center justify-content-between flex-shrink-0">
-          <span class="fw-bold small text-dark"><i class="bi bi-table me-2 text-primary"></i>방문계획 수립 및 조정 목록</span>
-          <span class="x-small text-muted fst-italic">* 자동 수립된 방문 계획 목록입니다. [월간 캘린더] 탭에서 드래그 앤 드롭으로 일정을 간편하게 이동할 수 있습니다.</span>
-        </div>
-        <div class="card-body p-0 flex-grow-1 bg-white overflow-hidden d-flex flex-column">
-          <div ref="gridRef" class="tabulator-instance flex-grow-1"></div>
-        </div>
-      </div>
+      <!-- [중앙] 탭 구조 컨테이너 (목록 뷰 vs 캘린더 뷰) -->
+      <div class="card border shadow-sm flex-grow-1 d-flex flex-column overflow-hidden">
+        <!-- 탭 헤더 -->
+        <ul class="nav nav-tabs px-3 pt-2 bg-white border-bottom flex-shrink-0">
+          <li class="nav-item">
+            <button class="nav-link py-1 px-3 small" :class="{ 'active fw-bold': activeTab === 'TABLE' }" @click="activeTab = 'TABLE'">
+              <i class="bi bi-table me-1 text-primary"></i>방문계획 목록 (Table View)
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link py-1 px-3 small" :class="{ 'active fw-bold': activeTab === 'CALENDAR' }" @click="activeTab = 'CALENDAR'">
+              <i class="bi bi-calendar3 me-1 text-primary"></i>월간 캘린더 (Calendar View)
+            </button>
+          </li>
+          <li class="nav-item ms-auto align-self-center pb-1">
+            <span class="x-small text-muted fst-italic">
+              <i class="bi bi-info-circle me-1"></i>방문 주기의 시급성, 수주 성공 확도, 주말·공휴일 제외 평일 및 위·경도 동선 기반 최적 자동 산출
+            </span>
+          </li>
+        </ul>
 
-      <!-- [탭 2] 월간 캘린더 뷰 (드래그 앤 드롭 지원) -->
-      <div v-if="activeTab === 'calendar'" class="card border shadow-sm flex-grow-1 d-flex flex-column overflow-hidden p-3 bg-white">
-        <div class="d-flex justify-content-between align-items-center mb-2 flex-shrink-0">
-          <h6 class="fw-bold text-dark m-0"><i class="bi bi-calendar3 me-2 text-primary"></i>{{ filter.ym.substring(0,4) }}년 {{ filter.ym.substring(4,6) }}월 방문 일정 캘린더 (드래그로 일정 이동 가능)</h6>
-          <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">총 확정 방문건수: {{ gridData.length }}건</span>
-        </div>
-        <div class="calendar-wrapper flex-grow-1 overflow-auto border rounded">
-          <div class="calendar-header-grid">
-            <div class="cal-head text-danger">일</div>
-            <div class="cal-head">월</div>
-            <div class="cal-head">화</div>
-            <div class="cal-head">수</div>
-            <div class="cal-head">목</div>
-            <div class="cal-head">금</div>
-            <div class="cal-head text-primary">토</div>
+        <!-- 탭 컨텐츠 영역 -->
+        <div class="tab-content flex-grow-1 d-flex flex-column overflow-hidden bg-white">
+          <!-- 탭 1) 목록 뷰 (Table) -->
+          <div class="tab-pane flex-grow-1 d-flex flex-column overflow-hidden" :class="{ 'show active d-flex': activeTab === 'TABLE', 'd-none': activeTab !== 'TABLE' }">
+            <div ref="gridRef" class="tabulator-instance flex-grow-1"></div>
           </div>
-          <div class="calendar-body-grid">
-            <div v-for="(day, idx) in calendarDays" :key="idx"
-                 class="cal-cell"
-                 :class="{'other-month': !day.isCurrentMonth, 'today': day.isToday}"
-                 @dragover.prevent
-                 @drop="onDropToDay($event, day.fullDate)">
-              <div class="cal-day-num">{{ day.dayNum }}</div>
-              <div class="cal-events">
-                <div v-for="ev in day.events" :key="ev.salesid"
-                     class="cal-event-badge"
-                     draggable="true"
-                     @dragstart="onDragStart($event, ev)"
-                     :title="ev.custnm + ' - ' + ev.salestitle">
-                  <span class="fw-bold text-truncate">{{ ev.custnm }}</span>
-                  <span class="text-muted extra-small d-block text-truncate">{{ ev.salestitle }}</span>
+
+          <!-- 탭 2) 캘린더 뷰 (Calendar) -->
+          <div class="tab-pane flex-grow-1 overflow-auto p-3" :class="{ 'show active': activeTab === 'CALENDAR', 'd-none': activeTab !== 'CALENDAR' }">
+            <div class="calendar-grid">
+              <div class="calendar-day-head" v-for="d in ['일','월','화','수','목','금','토']" :key="d">{{ d }}</div>
+              <!-- 빈 칸 패딩 -->
+              <div class="calendar-day empty" v-for="n in startDayOfWeek" :key="'e'+n"></div>
+              <!-- 날짜별 칸 -->
+              <div class="calendar-day" v-for="day in daysInMonth" :key="day" :class="{'today': isToday(day)}">
+                <span class="day-num">{{ day }}</span>
+                <div class="events-container mt-1">
+                  <div v-for="ev in getEventsForDay(day)" :key="ev.salesid + ev.plan_dt" class="event-badge text-truncate mb-1" :title="ev.custnm + ' - ' + ev.deal_title">
+                    <span class="badge bg-primary text-white x-small w-100 text-truncate text-start px-1 py-1">
+                      <i class="bi bi-geo-alt-fill me-1"></i>{{ ev.custnm }}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -135,15 +113,132 @@
       </div>
 
       <!-- 안내 가이드 -->
-      <div class="p-1 text-center text-muted x-small opacity-75 flex-shrink-0">
-        <i class="bi bi-info-circle me-1"></i> [자동생성] 시 최적 동선으로 스케줄이 수립되며, 그리드 또는 캘린더에서 일정 변경 후 [일정확정] 시 최종 반영됩니다.
+      <div class="p-1 text-center text-muted x-small opacity-75">
+        <i class="bi bi-info-circle me-1"></i> [자동생성] 버튼을 누르면 조건에 맞는 미팅 일정이 최적의 동선과 주기로 자동 배치되며, 목록 탭에서 체크박스로 행을 선택한 뒤 [일정확정] 시 DB에 최종 저장됩니다. 각 행 우측의 [상담작성]을 통해 팝업창에서 바로 상담일지를 등록할 수 있습니다.
+      </div>
+    </div>
+  </div>
+
+  <!-- 🚀 상담일지 작성 팝업 모달 -->
+  <div v-if="diaryModalVisible" class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content border-0 shadow-lg rounded-4">
+        <div class="modal-header bg-primary text-white py-2 px-3">
+          <h6 class="modal-title fw-bold"><i class="bi bi-journal-text me-2"></i>상담일지 작성</h6>
+          <button type="button" class="btn-close btn-close-white" @click="diaryModalVisible = false"></button>
+        </div>
+        <div class="modal-body p-3 bg-light">
+          <div class="card border-0 shadow-sm p-3 bg-white rounded-3">
+            <!-- 폼 내에서 거래처명, 연락처, 영업건 ID, 영업건명 조회 -->
+            <div class="row g-2 mb-2">
+              <div class="col-md-3">
+                <label class="form-label x-small fw-bold text-muted">거래처명</label>
+                <input v-model="formDiaryModal.custnm" type="text" class="form-control form-control-sm bg-light" readonly />
+              </div>
+              <div class="col-md-3">
+                <label class="form-label x-small fw-bold text-muted">고객 연락처</label>
+                <input v-model="formDiaryModal.hpno" type="text" class="form-control form-control-sm bg-light text-primary fw-bold" readonly />
+              </div>
+              <div class="col-md-3">
+                <label class="form-label x-small fw-bold text-muted">영업건 ID</label>
+                <input v-model="formDiaryModal.salesid" type="text" class="form-control form-control-sm bg-light" readonly />
+              </div>
+              <div class="col-md-3">
+                <label class="form-label x-small fw-bold text-muted">영업건명</label>
+                <input v-model="formDiaryModal.deal_title" type="text" class="form-control form-control-sm bg-light" readonly />
+              </div>
+            </div>
+
+            <!-- 상담일자, 상담시간, 상담채널, 상담고객(Keyman - 필수) -->
+            <div class="row g-2 mb-2">
+              <div class="col-md-3">
+                <label class="form-label x-small fw-bold">상담일자</label>
+                <input v-model="formDiaryModal.contdt" type="date" class="form-control form-control-sm" />
+              </div>
+              <div class="col-md-3">
+                <label class="form-label x-small fw-bold">상담시간</label>
+                <div class="input-group input-group-sm">
+                  <input v-model.number="formDiaryModal.conthh" type="number" class="form-control" min="0" max="23" style="max-width: 45px;" />
+                  <span class="input-group-text px-1">시</span>
+                  <input v-model.number="formDiaryModal.contmm" type="number" class="form-control" min="0" max="59" style="max-width: 45px;" />
+                  <span class="input-group-text px-1">분</span>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label x-small fw-bold">상담채널</label>
+                <select v-model="formDiaryModal.channel" class="form-select form-select-sm">
+                  <option value="010">방문</option>
+                  <option value="020">전화</option>
+                  <option value="030">이메일</option>
+                  <option value="040">기타</option>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label x-small fw-bold text-danger">상담고객 (필수)</label>
+                <select v-model="formDiaryModal.custid" class="form-select form-select-sm border-danger">
+                  <option value="" disabled>상담고객 선택</option>
+                  <option v-for="k in modalKeymanList" :key="k.custid" :value="k.custid">{{ k.name }} ({{ k.jikch || '담당' }})</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row g-2 mb-2">
+              <div class="col-md-8">
+                <label class="form-label x-small fw-bold">후속조치 (Action Item)</label>
+                <input v-model="formDiaryModal.actionitem" type="text" class="form-control form-control-sm" placeholder="예: 견적서 발송" />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label x-small fw-bold">조치완료여부</label>
+                <div class="form-check form-switch mt-1">
+                  <input v-model="formDiaryModal.actionstatus" class="form-check-input" type="checkbox" true-value="Y" false-value="N" id="modalActionStatus">
+                  <label class="form-check-label small fw-bold" for="modalActionStatus">{{ formDiaryModal.actionstatus === 'Y' ? '완료' : '미해결' }}</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="row g-2 mb-2">
+              <div class="col-md-4">
+                <label class="form-label x-small fw-bold">다음 미팅일</label>
+                <input v-model="formDiaryModal.nextmeetdt" type="date" class="form-control form-control-sm" />
+              </div>
+              <div class="col-md-8">
+                <label class="form-label x-small fw-bold">다음 미팅 안건</label>
+                <input v-model="formDiaryModal.nextmeetagenda" type="text" class="form-control form-control-sm" placeholder="다음 미팅 안건" />
+              </div>
+            </div>
+
+            <!-- HSAA100U와 동일한 표준 용어: 확인요청 (관리자 보고) 및 보고내용 -->
+            <div class="row g-2 mb-2">
+              <div class="col-md-4">
+                <label class="form-label x-small fw-bold">확인요청</label>
+                <div class="d-flex align-items-center gap-1 mt-1">
+                  <input v-model="formDiaryModal.reportyn" class="form-check-input" type="checkbox" true-value="Y" false-value="N" id="modalReportYn">
+                  <label class="form-check-label x-small fw-bold text-danger" for="modalReportYn">관리자 보고</label>
+                </div>
+              </div>
+              <div class="col-md-8" v-if="formDiaryModal.reportyn === 'Y'">
+                <label class="form-label x-small fw-bold text-primary">보고내용</label>
+                <input v-model="formDiaryModal.reportcontent" type="text" class="form-control form-control-sm bg-primary bg-opacity-10" placeholder="관리자에게 보고할 내용을 입력하세요" />
+              </div>
+            </div>
+
+            <div class="mb-2">
+              <label class="form-label x-small fw-bold">상담 내용</label>
+              <textarea v-model="formDiaryModal.diarycontent" class="form-control form-control-sm" rows="5"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer bg-white py-2 px-3">
+          <button type="button" class="btn btn-secondary btn-sm px-3" @click="diaryModalVisible = false">취소</button>
+          <button type="button" class="btn btn-primary btn-sm px-3" @click="saveDiaryModal">저장하기</button>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, nextTick, watch } from 'vue'
+import { ref, reactive, onMounted, computed, watch, nextTick } from 'vue'
 import { TabulatorFull as Tabulator } from 'tabulator-tables'
 import 'tabulator-tables/dist/css/tabulator_bootstrap5.min.css'
 import { useAlerts } from '@/composables/useAlerts'
@@ -154,75 +249,198 @@ import { useAuthStore } from '@/stores/authStore'
 const authstore = useAuthStore()
 const { showAlert, showError, vAlert, vAlertError, alertMessage } = useAlerts()
 
-const activeTab = ref<'grid' | 'calendar'>('grid')
+const activeTab = ref<'TABLE' | 'CALENDAR'>('TABLE')
+const planData = ref<any[]>([])
+
 const filter = reactive({
-  viewType: 'MONTH',
   ym: new Date().toISOString().slice(0, 7).replace('-', ''),
   userid: authstore.userid || '',
   dailyCapa: 4
 })
 
+// 상담일지 모달 상태
+const diaryModalVisible = ref(false)
+const diaryModalData = ref<any>({})
+const modalKeymanList = ref<any[]>([])
+const formDiaryModal = reactive<any>({
+  ser: '',
+  salesid: '',
+  custcd: '',
+  custid: '',
+  custnm: '',
+  deal_title: '',
+  hpno: '',
+  contdt: new Date().toISOString().slice(0, 10),
+  conthh: 10,
+  contmm: 0,
+  channel: '010', // 🚀 기본값 '방문' (010)
+  diarycontent: '[상담 목적]\n- \n\n[상담 내용]\n- \n\n[향후 계획/요청사항]\n- ',
+  actionitem: '',
+  actionstatus: 'N',
+  nextmeetdt: '',
+  nextmeetagenda: '',
+  reportyn: 'N',
+  reportcontent: ''
+})
+
+watch(() => formDiaryModal.custid, (newId) => {
+  if (newId && modalKeymanList.value.length > 0) {
+    const found = modalKeymanList.value.find((k: any) => String(k.custid) === String(newId))
+    if (found) {
+      formDiaryModal.hpno = found.hpno || found.custtel || found.telno || ''
+    }
+  }
+})
+
+const openDiaryModal = async (row: any) => {
+  diaryModalData.value = row
+  formDiaryModal.ser = ''
+  formDiaryModal.salesid = row.salesid || ''
+  formDiaryModal.custcd = row.custcd || ''
+  formDiaryModal.custid = ''
+  formDiaryModal.custnm = row.custnm || ''
+  formDiaryModal.deal_title = row.deal_title || row.salestitle || ''
+  formDiaryModal.hpno = ''
+  modalKeymanList.value = []
+
+  try {
+    const resDetail = await api.get('/hsaa/detail', { params: { salesid: row.salesid } })
+    if (resDetail.data && resDetail.data.master) {
+      const m = resDetail.data.master
+      formDiaryModal.custnm = m.custnm || formDiaryModal.custnm
+      formDiaryModal.deal_title = m.salestitle || formDiaryModal.deal_title
+    }
+    if (row.custcd) {
+      const resKeyman = await api.get('/hsaa/keyman', { params: { custcd: row.custcd } })
+      modalKeymanList.value = resKeyman.data || []
+      if (modalKeymanList.value.length > 0) {
+        formDiaryModal.custid = modalKeymanList.value[0].custid || ''
+        formDiaryModal.hpno = modalKeymanList.value[0].hpno || modalKeymanList.value[0].custtel || modalKeymanList.value[0].telno || ''
+      }
+    }
+  } catch (e) {}
+
+  formDiaryModal.contdt = row.plan_dt ? row.plan_dt.replace(/-/g, '').replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3') : new Date().toISOString().slice(0, 10)
+  formDiaryModal.conthh = 10
+  formDiaryModal.contmm = 0
+  formDiaryModal.channel = '010' // 방문 기본값
+  formDiaryModal.diarycontent = `[상담 목적]\n- (${formDiaryModal.custnm || ''}) 미팅\n\n[상담 내용]\n- \n\n[향후 계획/요청사항]\n- `
+  formDiaryModal.actionitem = ''
+  formDiaryModal.actionstatus = 'N'
+  formDiaryModal.nextmeetdt = ''
+  formDiaryModal.nextmeetagenda = ''
+  formDiaryModal.reportyn = 'N'
+  formDiaryModal.reportcontent = ''
+  diaryModalVisible.value = true
+}
+
+const saveDiaryModal = async () => {
+  if (!formDiaryModal.custid) {
+    return vAlertError('상담고객(Keyman)을 반드시 선택하세요. 방문 시 상담 상대방은 필수입니다.')
+  }
+  if (!formDiaryModal.diarycontent) {
+    return vAlertError('상담 내용을 입력하세요.')
+  }
+  try {
+    const payload = {
+      ...formDiaryModal,
+      salesid: formDiaryModal.salesid,
+      custcd: formDiaryModal.custcd,
+      custid: formDiaryModal.custid,
+      cmpycd: authstore.cmpycd,
+      userid: filter.userid || authstore.userid,
+      deptcd: authstore.deptcd || '',
+      updemp: authstore.userid,
+      contdt: formDiaryModal.contdt.replace(/-/g, ''),
+      nextmeetdt: formDiaryModal.nextmeetdt ? formDiaryModal.nextmeetdt.replace(/-/g, '') : '',
+      content: formDiaryModal.diarycontent.split('\n')[0].substring(0, 100),
+      reportyn: formDiaryModal.reportyn || 'N'
+    }
+    await api.post('/hsaa/diary/save', payload)
+    vAlert('상담일지가 성공적으로 등록되었습니다.')
+    diaryModalVisible.value = false
+    fetchPlan()
+  } catch (e: any) {
+    vAlertError('상담일지 저장 실패: ' + (e.message || ''))
+  }
+}
+
+// 캘린더 계산용 Computed
+const currentYear = computed(() => {
+  const ym = filter.ym || '202611'
+  return parseInt(ym.substring(0, 4)) || new Date().getFullYear()
+})
+
+const currentMonth = computed(() => {
+  const ym = filter.ym || '202611'
+  return parseInt(ym.substring(4, 6)) || (new Date().getMonth() + 1)
+})
+
+const daysInMonth = computed(() => {
+  return new Date(currentYear.value, currentMonth.value, 0).getDate()
+})
+
+const startDayOfWeek = computed(() => {
+  return new Date(currentYear.value, currentMonth.value - 1, 1).getDay()
+})
+
+const isToday = (day: number) => {
+  const now = new Date()
+  return now.getFullYear() === currentYear.value && (now.getMonth() + 1) === currentMonth.value && now.getDate() === day
+}
+
+const getEventsForDay = (day: number) => {
+  const mStr = String(currentMonth.value).padStart(2, '0')
+  const dStr = String(day).padStart(2, '0')
+  const targetYmd = `${currentYear.value}${mStr}${dStr}`
+  return planData.value.filter(ev => String(ev.plan_dt || '').replace(/-/g, '') === targetYmd)
+}
+
 const salesmanList = ref<any[]>([])
 const gridRef = ref<HTMLDivElement | null>(null)
 let grid: Tabulator | null = null
-const gridData = ref<any[]>([])
-const calendarDays = ref<any[]>([])
-
-let draggedEvent: any = null
-
-const onDragStart = (e: DragEvent, ev: any) => {
-  draggedEvent = ev
-}
-
-const onDropToDay = (e: DragEvent, targetDateStr: string) => {
-  e.preventDefault()
-  if (!draggedEvent || !targetDateStr) return
-
-  draggedEvent.plan_dt = targetDateStr
-  const targetItem = gridData.value.find(item => item.salesid === draggedEvent.salesid)
-  if (targetItem) {
-    targetItem.plan_dt = targetDateStr
-  }
-  grid?.setData(gridData.value)
-  buildCalendar()
-  vAlert(`일정이 ${targetDateStr.substring(0,4)}-${targetDateStr.substring(4,6)}-${targetDateStr.substring(6,8)}로 변경되었습니다. [일정확정]을 눌러 저장하세요.`)
-  draggedEvent = null
-}
 
 const initialize = () => {
   grid?.clearData()
-  gridData.value = []
+  planData.value = []
   vAlert('초기화되었습니다.')
 }
 
 const fetchPlan = async () => {
   try {
     const res = await api.get('/hsaa/visit-plan', {
-      params: { ym: filter.ym, userid: filter.userid, viewType: filter.viewType }
+      params: { ym: filter.ym, userid: filter.userid || authstore.userid }
     })
-    const data = res.data || []
-    gridData.value = data
-    grid?.setData(data)
-    buildCalendar()
-    vAlert('방문 계획을 조회했습니다.')
+    const list = res.data || []
+    planData.value = list
+    if (grid) {
+      grid.setData(list)
+      grid.selectRow()
+    }
+    if (list.length === 0) {
+      vAlert('해당 월에 확정된 방문 계획이 없습니다. [자동생성] 후 [일정확정]을 진행하세요.')
+    } else {
+      vAlert(`방문 계획 조회 완료 (${list.length}건)`)
+    }
   } catch (e) {
     vAlertError('조회 중 오류 발생')
   }
 }
 
 const generateAutoPlan = async () => {
-  if (!confirm(`설정된 조건으로 ${filter.viewType === 'MONTH' ? '월간' : '주간'} 방문 계획을 자동 수립하시겠습니까?`)) return
+  if (!confirm('설정된 조건(중요도, 확도, 최종접촉일, 공휴일, 위경도 동선)을 기반으로 방문 계획을 자동 수립하시겠습니까?')) return
   try {
     const res = await api.post('/hsaa/visit-plan/generate', {
       ym: filter.ym,
       userid: filter.userid,
-      dailyCapa: filter.dailyCapa,
-      viewType: filter.viewType
+      dailyCapa: filter.dailyCapa
     })
-    const data = res.data || []
-    gridData.value = data
-    grid?.setData(data)
-    buildCalendar()
+    const list = res.data || []
+    planData.value = list
+    if (grid) {
+      grid.setData(list)
+      grid.selectRow()
+    }
     vAlert('스마트 방문 계획이 성공적으로 자동 수립되었습니다.')
   } catch (e) {
     vAlertError('자동 계획 수립 실패')
@@ -230,97 +448,66 @@ const generateAutoPlan = async () => {
 }
 
 const confirmAndSync = async () => {
-  if (!confirm('현재 수립 및 수정된 방문 계획을 개인 일정 및 캘린더에 최종 확정 반영하시겠습니까?')) return
+  const selectedRows = grid?.getSelectedData() || []
+  if (selectedRows.length === 0) {
+    return vAlertError('확정할 방문 계획 행을 선택하세요.')
+  }
+  if (!confirm(`선택된 ${selectedRows.length}건의 방문 계획을 최종 확정하여 데이터베이스에 저장하시겠습니까?`)) return
   try {
-    const currentData = grid?.getData() || gridData.value || []
     await api.post('/hsaa/visit-plan/confirm', {
       userid: filter.userid,
-      plans: currentData
+      plans: selectedRows
     })
-    gridData.value = currentData
-    vAlert('방문 계획이 성공적으로 확정 및 캘린더에 연동되었습니다.')
+    vAlert('선택된 방문 계획이 성공적으로 확정 및 저장되었습니다.')
+    fetchPlan()
   } catch (e) {
     vAlertError('일정 확정 실패')
   }
 }
 
-// 🔔 브라우저 웹 푸시 알림 설정
-const requestWebNotification = async () => {
-  if (!('Notification' in window)) {
-    alert('이 브라우저는 데스크톱 푸시 알림을 지원하지 않습니다.')
-    return
-  }
-  const permission = await Notification.requestPermission()
-  if (permission === 'granted') {
-    vAlert('브라우저 푸시 알림이 활성화되었습니다. 오늘 방문 예정인 일정에 대해 알림이 전송됩니다.')
-    new Notification('스마트 ERP CRM', {
-      body: '영업활동 방문계획 알람 기능이 정상 설정되었습니다.',
-      icon: '/favicon.ico'
-    })
-  } else {
-    alert('알림 권한이 거부되었습니다. 브라우저 설정에서 알림을 허용해 주세요.')
+const initTabulator = () => {
+  if (!gridRef.value) return
+  grid = new Tabulator(gridRef.value, {
+    layout: "fitColumns",
+    height: "100%",
+    selectable: true,
+    headerSort: false,
+    columnDefaults: {
+      headerHozAlign: 'center',
+      vertAlign: "middle"
+    },
+    columns: [
+      { title: "", formatter: "rowSelection", titleFormatter: "rowSelection", width: 50, hozAlign: "center", headerSort: false, cellClick: (e, cell) => {
+          cell.getRow().toggleSelect();
+      }},
+      { title: "방문예정일", field: "plan_dt", width: 110, hozAlign: "center", cssClass: "fw-bold text-primary", editor: "input" },
+      { title: "거래처명", field: "custnm", width: 160, hozAlign: "left" },
+      { title: "영업건명", field: "deal_title", minWidth: 200, hozAlign: "left" },
+      { title: "중요도(등급)", field: "import_nm", width: 100, hozAlign: "center" },
+      { title: "확도(%)", field: "succrate", width: 80, hozAlign: "center" },
+      { title: "최종접촉일", field: "lastmtdt", width: 110, hozAlign: "center" },
+      { title: "주소", field: "address", minWidth: 250, hozAlign: "left" },
+      { title: "상담작성", width: 90, hozAlign: "center", headerSort: false, formatter: () => "<button class='btn btn-xs btn-primary py-0 px-1' style='font-size:11px;'>상담작성</button>", cellClick: (e, cell) => {
+          const row = cell.getRow().getData()
+          if (!row.salesid) {
+            vAlertError('영업건 정보가 없습니다.')
+            return
+          }
+          openDiaryModal(row)
+      }}
+    ]
+  })
+  if (planData.value.length > 0) {
+    grid.setData(planData.value)
+    grid.selectRow()
   }
 }
 
-// 🗓️ 월간 캘린더 데이터 빌드
-const buildCalendar = () => {
-  if (grid) {
-    gridData.value = grid.getData() || gridData.value || []
-  }
-  const ymStr = filter.ym
-  if (!ymStr || ymStr.length !== 6) return
-
-  const year = parseInt(ymStr.substring(0, 4))
-  const month = parseInt(ymStr.substring(4, 6)) - 1
-
-  const firstDayIndex = new Date(year, month, 1).getDay()
-  const lastDay = new Date(year, month + 1, 0).getDate()
-  const prevLastDay = new Date(year, month, 0).getDate()
-
-  const days: any[] = []
-  const today = new Date()
-
-  // 1. 이전 달 여백 채우기
-  for (let i = firstDayIndex - 1; i >= 0; i--) {
-    const dNum = prevLastDay - i
-    days.push({ dayNum: dNum, fullDate: '', isCurrentMonth: false, isToday: false, events: [] })
-  }
-
-  // 2. 이번 달 날짜 채우기
-  for (let d = 1; d <= lastDay; d++) {
-    const dStr = String(d).padStart(2, '0')
-    const mStr = String(month + 1).padStart(2, '0')
-    const fullDate = `${year}${mStr}${dStr}`
-
-    const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === d
-
-    const dayEvents = gridData.value.filter(item => {
-      const pDt = String(item.plan_dt || '').replace(/[^0-9]/g, '')
-      return pDt === fullDate
-    })
-
-    days.push({ dayNum: d, fullDate, isCurrentMonth: true, isToday, events: dayEvents })
-  }
-
-  // 3. 다음 달 여백 채우기 (총 35일 또는 42일 맞추기)
-  const totalCells = days.length <= 35 ? 35 : 42
-  const nextDaysCount = totalCells - days.length
-  for (let d = 1; d <= nextDaysCount; d++) {
-    days.push({ dayNum: d, fullDate: '', isCurrentMonth: false, isToday: false, events: [] })
-  }
-
-  calendarDays.value = days
-}
-
-watch(activeTab, (val) => {
-  if (val === 'grid') {
-    nextTick(() => {
-      grid?.redraw(true)
-    })
-  } else if (val === 'calendar') {
-    nextTick(() => {
-      buildCalendar()
-    })
+watch(activeTab, async (newTab) => {
+  if (newTab === 'TABLE') {
+    await nextTick()
+    initTabulator()
+    fetchPlan()
   }
 })
 
@@ -330,41 +517,7 @@ onMounted(async () => {
     salesmanList.value = res.data || []
   } catch (e) {}
 
-  grid = new Tabulator(gridRef.value!, {
-    layout: "fitColumns",
-    height: "100%",
-    headerSort: false,
-    columnDefaults: {
-      headerHozAlign: 'center',
-      vertAlign: "middle"
-    },
-    columns: [
-      {
-        title: "방문예정일", field: "plan_dt", width: 200, hozAlign: "center", cssClass: "fw-bold text-primary",
-        formatter: (cell) => {
-          const v = String(cell.getValue() || '');
-          if (v.length === 8) {
-            const y = v.substring(0, 4);
-            const m = v.substring(4, 6);
-            const d = v.substring(6, 8);
-            const dateObj = new Date(`${y}-${m}-${d}`);
-            if (!isNaN(dateObj.getTime())) {
-              const days = ['일', '월', '화', '수', '목', '금', '토'];
-              const dayOfWeek = days[dateObj.getDay()];
-              return `${y}-${m}-${d} (${dayOfWeek})`;
-            }
-          }
-          return v;
-        }
-      },
-      { title: "거래처명", field: "custnm", width: 200, hozAlign: "left" },
-      { title: "영업건명", field: "salestitle", minWidth: 200, hozAlign: "left" },
-      { title: "중요도", field: "import_nm", width: 150, hozAlign: "center" },
-      { title: "확도(%)", field: "succrate", width: 150, hozAlign: "center" },
-      { title: "최종접촉일", field: "lastmtdt", width: 150, hozAlign: "center" },
-      { title: "주소", field: "address", minWidth: 180, hozAlign: "left" }
-    ]
-  })
+  initTabulator()
   fetchPlan()
 })
 </script>
@@ -381,9 +534,7 @@ onMounted(async () => {
 .btn-search { background-color: #0d6efd; border-color: #0d6efd; color: #fff; }
 .btn-search:hover { background-color: #0b5ed7; border-color: #0a58ca; color: #fff; }
 .btn-auto { background-color: #fd7e14; border-color: #fd7e14; color: #fff; }
-.btn-auto:hover { background-color: #e8590c; border-color: #d9480f; color: #fff; }
-.btn-alarm { background-color: #0dcaf0; border-color: #0dcaf0; color: #fff; }
-.btn-alarm:hover { background-color: #31d2f2; border-color: #25cff2; color: #fff; }
+.btn-auto:hover { background-color: #e8590c; border-color: #d9480f; color: #d9480f; }
 .btn-save { background-color: #198754; border-color: #198754; color: #fff; }
 .btn-save:hover { background-color: #157347; border-color: #146c43; color: #fff; }
 
@@ -391,18 +542,12 @@ onMounted(async () => {
 .erp-table-dense td { padding: 4px 8px; border: 1px solid #dee2e6; }
 :deep(.tabulator-row.tabulator-selectable:hover) { background-color: #f8f9fa !important; }
 
-/* 🗓️ 월간 캘린더 스타일 */
-.calendar-wrapper { display: flex; flex-direction: column; height: 100%; background: #f8fafc; }
-.calendar-header-grid { display: grid; grid-template-columns: repeat(7, 1fr); background: #f1f5f9; border-bottom: 1px solid #dee2e6; text-align: center; font-weight: bold; font-size: 12px; padding: 6px 0; }
-.calendar-header-grid .cal-head { padding: 4px 0; }
-.calendar-body-grid { display: grid; grid-template-columns: repeat(7, 1fr); grid-auto-rows: minmax(115px, 1fr); flex-grow: 1; gap: 1px; background: #dee2e6; }
-.cal-cell { background: #fff; padding: 6px; display: flex; flex-direction: column; overflow: hidden; }
-.cal-cell.other-month { background: #f8fafc; opacity: 0.5; }
-.cal-cell.today { background: #eef2ff; border: 2px solid #0d6efd; }
-.cal-day-num { font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #333; }
-.cal-events { display: flex; flex-direction: column; gap: 3px; overflow-y: auto; max-height: 110px; }
-.cal-event-badge { background: #e0f2fe; border-left: 3px solid #0284c7; padding: 3px 6px; border-radius: 4px; font-size: 11px; cursor: grab; transition: all 0.2s; user-select: none; }
-.cal-event-badge:active { cursor: grabbing; }
-.cal-event-badge:hover { background: #bae6fd; }
-.extra-small { font-size: 10px; }
+/* 캘린더 그리드 스타일 */
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background-color: #e2e8f0; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
+.calendar-day-head { background-color: #f8fafc; padding: 8px; text-align: center; font-size: 12px; font-weight: bold; color: #475569; }
+.calendar-day { background-color: #fff; min-height: 110px; padding: 6px; position: relative; }
+.calendar-day.empty { background-color: #f8fafc; }
+.calendar-day.today { background-color: #eef2ff; }
+.day-num { font-size: 12px; font-weight: bold; color: #334155; }
+.event-badge { font-size: 11px; cursor: pointer; }
 </style>

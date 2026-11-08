@@ -1,5 +1,6 @@
 package com.crmbank.erp.mobile.hsaa;
 
+import android.annotation.SuppressLint;
 import android.app.DatePickerDialog;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -40,6 +41,8 @@ import retrofit2.Response;
 /**
  * 🚀 [MHSAA400S] 기간별 영업상담 내역 조회 프로그램 (모바일)
  */
+@SuppressLint({"SetTextI18n", "NotifyDataSetChanged", "DefaultLocale", "SimpleDateFormat"})
+@SuppressWarnings({"unused", "FieldCanBeLocal"})
 public class MHSAA400S extends BaseActivity {
 
     private TextView tvSdate, tvEdate;

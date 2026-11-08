@@ -17,7 +17,7 @@ import java.io.File;
 @RestController
 public class StorageController {
 
-    private final String storageDirectory = "/app/storage";
+    private final String storageDirectory = new File("/app/storage").exists() ? "/app/storage" : (System.getProperty("user.dir") + "/storage");
 
     @GetMapping({"/storage/**", "/api/storage/**"})
     public ResponseEntity<Resource> serveStorageFile(HttpServletRequest request) {

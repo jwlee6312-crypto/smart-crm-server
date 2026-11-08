@@ -3,6 +3,7 @@ package com.crmbank.erp.mobile.hsaa;
 import android.annotation.SuppressLint;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.LinearLayout;
@@ -21,6 +22,7 @@ import com.crmbank.erp.mobile.RetrofitClient;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -34,8 +36,8 @@ import retrofit2.Response;
 /**
  * 🚀 [MHSAA200S] 영업실적 현황
  */
-@SuppressLint({"SetTextI18n", "SimpleDateFormat"})
-@SuppressWarnings("unused")
+@SuppressLint({"SetTextI18n", "NotifyDataSetChanged", "DefaultLocale", "SimpleDateFormat"})
+@SuppressWarnings({"unused", "FieldCanBeLocal"})
 public class MHSAA200S extends BaseActivity {
 
     private TextView tvYymm, tvPlanAmt, tvRealAmtSum;
@@ -44,7 +46,7 @@ public class MHSAA200S extends BaseActivity {
     private LinearLayout llPerfList;
 
     private ApiService apiService;
-    private String currentUserId, userGrp;
+    private String cmpycd, currentUserId, userGrp;
     private final List<Map<String, Object>> userList = new ArrayList<>();
     private final List<Map<String, Object>> perfList = new ArrayList<>();
 
@@ -54,6 +56,7 @@ public class MHSAA200S extends BaseActivity {
         setContentView(R.layout.activity_mhsaa200s);
 
         SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+        cmpycd = prefs.getString("cmpycd", "coit").trim();
         currentUserId = prefs.getString("userId", "");
         userGrp = prefs.getString("usergrp", "");
         apiService = RetrofitClient.getApiService();
@@ -61,6 +64,7 @@ public class MHSAA200S extends BaseActivity {
         initViews();
         loadUsers();
         
+        // 초기 년월 설정 (당월)
         tvYymm.setText(new SimpleDateFormat("yyyy-MM", Locale.getDefault()).format(new Date()));
         
         search();
@@ -89,6 +93,8 @@ public class MHSAA200S extends BaseActivity {
                 if (response.isSuccessful() && response.body() != null) {
                     userList.clear();
                     
+                    // 관리자 그룹인 경우만 전체 조회 및 담당자 변경 허용
+                    // 허용 코드: '000', '610', '660'
                     boolean isManager = "000".equals(userGrp) || "610".equals(userGrp) || "660".equals(userGrp);
                     
                     if (isManager) {
@@ -113,13 +119,15 @@ public class MHSAA200S extends BaseActivity {
                     adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
                     spUser.setAdapter(adapter);
                     
+                    // 기본값으로 본인 선택
                     spUser.setSelection(defaultIdx);
                     
+                    // 관리자가 아니면 변경 금지
                     if (!isManager) {
                         spUser.setEnabled(false);
                     }
                     
-                    search();
+                    search(); // 유저 로드 후 자동 조회
                 }
             }
             @Override public void onFailure(@NonNull Call<ApiResponse<List<Map<String, Object>>>> call, @NonNull Throwable t) {}
@@ -134,19 +142,17 @@ public class MHSAA200S extends BaseActivity {
         }
 
         String yymm = dateText.replace("-", "");
-        final String targetUserid;
+        String targetUserid = "";
         
         if (spUser.getSelectedItemPosition() < 0) {
             Toast.makeText(this, "영업담당을 선택하세요.", Toast.LENGTH_SHORT).show();
             return;
         }
         
-        String selectedUserid = getStringVal(userList.get(spUser.getSelectedItemPosition()), "userid");
+        targetUserid = getStringVal(userList.get(spUser.getSelectedItemPosition()), "userid");
         boolean isManager = "000".equals(userGrp) || "610".equals(userGrp) || "660".equals(userGrp);
-        if (selectedUserid.isEmpty() && !isManager) {
+        if (targetUserid.isEmpty() && !isManager) {
             targetUserid = currentUserId;
-        } else {
-            targetUserid = selectedUserid;
         }
 
         fetchStats(yymm, targetUserid);
@@ -162,6 +168,7 @@ public class MHSAA200S extends BaseActivity {
             @Override public void onResponse(@NonNull Call<ApiResponse<List<Map<String, Object>>>> call, @NonNull Response<ApiResponse<List<Map<String, Object>>>> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
                     DecimalFormat df = new DecimalFormat("#,###");
+                    // 초기화
                     tvPlanAmt.setText("0"); tvRealAmtSum.setText("0");
                     tvSuccessCnt.setText("0"); tvFailCnt.setText("0"); tvHoldCnt.setText("0"); tvGiveUpCnt.setText("0");
                     
@@ -170,11 +177,13 @@ public class MHSAA200S extends BaseActivity {
                         String code = getStringVal(stat, "code");
                         double val = getDoubleVal(stat, "val");
                         
+                        // 금액 정보 (G6)
                         if ("G6".equals(gubun)) {
-                            if ("300".equals(code)) tvPlanAmt.setText(df.format(val));
-                            if ("200".equals(code)) tvRealAmtSum.setText(df.format(val));
+                            if ("300".equals(code)) tvPlanAmt.setText(df.format(val)); // 당월목표액
+                            if ("200".equals(code)) tvRealAmtSum.setText(df.format(val)); // 당월수주액
                         }
                         
+                        // 상태별 건수 (G4)
                         if ("G4".equals(gubun)) {
                             if ("900".equals(code)) tvSuccessCnt.setText(String.valueOf((int)val));
                             if ("910".equals(code)) tvFailCnt.setText(String.valueOf((int)val));
@@ -230,9 +239,7 @@ public class MHSAA200S extends BaseActivity {
     private String getStringVal(Map<String, Object> map, String key) {
         if (map == null) return "";
         Object val = map.get(key.toLowerCase());
-        if (val == null) {
-            val = map.get(key.toUpperCase());
-        }
+        if (val == null) val = map.get(key.toUpperCase());
         return val != null ? String.valueOf(val).trim() : "";
     }
 

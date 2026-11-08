@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -21,6 +22,7 @@ import androidx.annotation.NonNull;
 import com.crmbank.erp.mobile.ApiResponse;
 import com.crmbank.erp.mobile.ApiService;
 import com.crmbank.erp.mobile.BaseActivity;
+import com.crmbank.erp.mobile.PopupAdapter;
 import com.crmbank.erp.mobile.R;
 import com.crmbank.erp.mobile.RetrofitClient;
 
@@ -40,8 +42,8 @@ import retrofit2.Response;
 /**
  * 🚀 [MHSAA120U] Key맨 등록
  */
-@SuppressLint({"SetTextI18n", "SimpleDateFormat"})
-@SuppressWarnings({"unchecked", "unused"})
+@SuppressLint({"SetTextI18n", "NotifyDataSetChanged", "DefaultLocale"})
+@SuppressWarnings({"unchecked", "unused", "FieldCanBeLocal"})
 public class MHSAA120U extends BaseActivity {
 
     private EditText etSalesTitle, etName, etDept, etJikch, etHpNo, etTelNo, etMail, etRemark;
@@ -50,13 +52,14 @@ public class MHSAA120U extends BaseActivity {
     private LinearLayout llKeymanList;
 
     private ApiService apiService;
-    private String cmpycd;
+    private String cmpycd, userid;
     private String salesid = "";
     private String custcd = "";
     private String currentKeymanId = "";
 
     private final List<Map<String, Object>> keymanList = new ArrayList<>();
     private final List<Map<String, Object>> favorCodeList = new ArrayList<>();
+    private final List<Map<String, Object>> levelCodeList = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,12 +68,14 @@ public class MHSAA120U extends BaseActivity {
 
         SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
         cmpycd = prefs.getString("cmpycd", "coit").trim();
+        userid = prefs.getString("userId", "");
 
         apiService = RetrofitClient.getApiService();
 
         initViews();
         loadInitialData();
 
+        // 110U 등에서 넘어올 때
         salesid = getIntent().getStringExtra("salesid");
         if (salesid != null && !salesid.isEmpty()) {
             fetchSalesDetail();
@@ -99,7 +104,7 @@ public class MHSAA120U extends BaseActivity {
         findViewById(R.id.btnReset).setOnClickListener(v -> initializeForm());
         findViewById(R.id.btnSave).setOnClickListener(v -> save());
         findViewById(R.id.btnDelete).setOnClickListener(v -> delete());
-        findViewById(R.id.btnSalesSearch).setOnClickListener(v -> openHelp());
+        findViewById(R.id.btnSalesSearch).setOnClickListener(v -> openHelp("SALES"));
         
         etHpNo.setOnClickListener(v -> makeCall(etHpNo.getText().toString()));
         etTelNo.setOnClickListener(v -> makeCall(etTelNo.getText().toString()));
@@ -107,10 +112,12 @@ public class MHSAA120U extends BaseActivity {
 
         tvBirthday.setOnClickListener(v -> showDatePicker(tvBirthday));
 
+        // 생일 구분 초기화
         ArrayAdapter<String> birAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, new String[]{"양력", "음력"});
         birAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spBirGb.setAdapter(birAdapter);
         
+        // 등급 초기화
         ArrayAdapter<String> levelAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, new String[]{"상", "중", "하"});
         levelAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spLevel.setAdapter(levelAdapter);
@@ -133,20 +140,21 @@ public class MHSAA120U extends BaseActivity {
     }
 
     private void loadInitialData() {
+        // 호감도 코드 (720)
         apiService.getHsaaCodes("720").enqueue(new Callback<ApiResponse<List<Map<String, Object>>>>() {
             @Override public void onResponse(@NonNull Call<ApiResponse<List<Map<String, Object>>>> c, @NonNull Response<ApiResponse<List<Map<String, Object>>>> r) {
                 if (r.isSuccessful() && r.body() != null) {
                     favorCodeList.clear(); favorCodeList.addAll(r.body().getData());
-                    setupSpinner(spFavor, favorCodeList);
+                    setupSpinner(spFavor, favorCodeList, "codenm");
                 }
             }
             @Override public void onFailure(@NonNull Call<ApiResponse<List<Map<String, Object>>>> c, @NonNull Throwable t) {}
         });
     }
 
-    private void setupSpinner(Spinner sp, List<Map<String, Object>> data) {
+    private void setupSpinner(Spinner sp, List<Map<String, Object>> data, String key) {
         List<String> items = new ArrayList<>();
-        for (Map<String, Object> d : data) items.add(getStringVal(d, "codenm"));
+        for (Map<String, Object> d : data) items.add(getStringVal(d, key));
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.item_spinner, items);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         sp.setAdapter(adapter);
@@ -155,7 +163,7 @@ public class MHSAA120U extends BaseActivity {
     private void fetchSalesDetail() {
         apiService.getHsaaDetail(salesid).enqueue(new Callback<ApiResponse<Map<String, Object>>>() {
             @Override public void onResponse(@NonNull Call<ApiResponse<Map<String, Object>>> call, @NonNull Response<ApiResponse<Map<String, Object>>> response) {
-                if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
+                if (response.isSuccessful() && response.body() != null) {
                     Map<String, Object> mst = (Map<String, Object>) response.body().getData().get("master");
                     if (mst != null) {
                         etSalesTitle.setText(getStringVal(mst, "salestitle"));
@@ -184,7 +192,7 @@ public class MHSAA120U extends BaseActivity {
     private void refreshKeymanList() {
         llKeymanList.removeAllViews();
         for (Map<String, Object> item : keymanList) {
-            View v = getLayoutInflater().inflate(R.layout.item_mhsaa120u_row, llKeymanList, false);
+            View v = getLayoutInflater().inflate(R.layout.item_mhsaa120u_row, llKeymanList, false); // row item layout needs to be created
             ((TextView) v.findViewById(R.id.tvRowName)).setText(getStringVal(item, "name"));
             ((TextView) v.findViewById(R.id.tvRowDept)).setText(getStringVal(item, "custdept"));
             ((TextView) v.findViewById(R.id.tvRowHp)).setText(getStringVal(item, "hpno"));
@@ -205,8 +213,10 @@ public class MHSAA120U extends BaseActivity {
         etRemark.setText(getStringVal(item, "remark"));
         tvBirthday.setText(formatDate(getStringVal(item, "birthday")));
         
+        // Spinner selections...
         spBirGb.setSelection("2".equals(getStringVal(item, "birgb")) ? 1 : 0);
-        setSpinnerSelection(spFavor, favorCodeList, getStringVal(item, "favor"));
+        setSpinnerSelection(spFavor, favorCodeList, "codecd", getStringVal(item, "favor"));
+        // Level logic...
     }
 
     private void save() {
@@ -244,21 +254,18 @@ public class MHSAA120U extends BaseActivity {
     private void delete() {
         if (currentKeymanId.isEmpty()) return;
         new AlertDialog.Builder(this).setTitle("삭제 확인").setMessage("Key맨 정보를 삭제하시겠습니까?")
-            .setPositiveButton("예", (d, w) -> performDelete())
-            .setNegativeButton("아니오", null).show();
+            .setPositiveButton("예", (d, w) -> {
+                apiService.deleteHsaaKeyman(currentKeymanId).enqueue(new Callback<ApiResponse<Object>>() {
+                    @Override public void onResponse(@NonNull Call<ApiResponse<Object>> c, @NonNull Response<ApiResponse<Object>> r) {
+                        Toast.makeText(MHSAA120U.this, "삭제되었습니다.", Toast.LENGTH_SHORT).show();
+                        fetchKeymanList(); initializeForm();
+                    }
+                    @Override public void onFailure(@NonNull Call<ApiResponse<Object>> c, @NonNull Throwable t) {}
+                });
+            }).setNegativeButton("아니오", null).show();
     }
 
-    private void performDelete() {
-        apiService.deleteHsaaKeyman(currentKeymanId).enqueue(new Callback<ApiResponse<Object>>() {
-            @Override public void onResponse(@NonNull Call<ApiResponse<Object>> c, @NonNull Response<ApiResponse<Object>> r) {
-                Toast.makeText(MHSAA120U.this, "삭제되었습니다.", Toast.LENGTH_SHORT).show();
-                fetchKeymanList(); initializeForm();
-            }
-            @Override public void onFailure(@NonNull Call<ApiResponse<Object>> c, @NonNull Throwable t) {}
-        });
-    }
-
-    private void openHelp() {
+    private void openHelp(String type) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_hsaa_search, null);
         builder.setView(dialogView);
@@ -282,18 +289,13 @@ public class MHSAA120U extends BaseActivity {
             @Override public int getCount() { return list.size(); }
             @Override public Object getItem(int p) { return list.get(p); }
             @Override public long getItemId(int p) { return p; }
-            @Override public View getView(int p, View convertView, ViewGroup pr) {
-                final View view;
-                if (convertView == null) {
-                    view = getLayoutInflater().inflate(R.layout.item_hsaa_pop, pr, false);
-                } else {
-                    view = convertView;
-                }
+            @Override public View getView(int p, View v, ViewGroup pr) {
+                if (v == null) v = getLayoutInflater().inflate(R.layout.item_hsaa_pop, pr, false);
                 Map<String, Object> item = list.get(p);
-                ((TextView) view.findViewById(R.id.tvPopCustNm)).setText(getStringVal(item, "custnm"));
-                ((TextView) view.findViewById(R.id.tvPopSalesTitle)).setText(getStringVal(item, "salestitle"));
-                ((TextView) view.findViewById(R.id.tvPopAddTime)).setText(formatDate(getStringVal(item, "addtime")));
-                return view;
+                ((TextView) v.findViewById(R.id.tvPopCustNm)).setText(getStringVal(item, "custnm"));
+                ((TextView) v.findViewById(R.id.tvPopSalesTitle)).setText(getStringVal(item, "salestitle"));
+                ((TextView) v.findViewById(R.id.tvPopAddTime)).setText(formatDate(getStringVal(item, "addtime")));
+                return v;
             }
         };
         lv.setAdapter(adapter);
@@ -327,7 +329,9 @@ public class MHSAA120U extends BaseActivity {
 
     private void showDatePicker(TextView tv) {
         Calendar cal = Calendar.getInstance();
-        new DatePickerDialog(this, (view, y, m, d) -> tv.setText(String.format(Locale.getDefault(), "%d-%02d-%02d", y, m + 1, d)), cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show();
+        new DatePickerDialog(this, (view, y, m, d) -> {
+            tv.setText(String.format(Locale.getDefault(), "%d-%02d-%02d", y, m + 1, d));
+        }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show();
     }
 
     private String getStringVal(Map<String, Object> map, String key) {
@@ -337,22 +341,21 @@ public class MHSAA120U extends BaseActivity {
         return val != null ? String.valueOf(val).trim() : "";
     }
 
-    private void setSpinnerSelection(Spinner sp, List<Map<String, Object>> list, String val) {
+    private void setSpinnerSelection(Spinner sp, List<Map<String, Object>> list, String key, String val) {
         for (int i = 0; i < list.size(); i++) {
-            if (getStringVal(list.get(i), "codecd").equals(val)) {
+            if (getStringVal(list.get(i), key).equals(val)) {
                 sp.setSelection(i);
                 break;
             }
         }
     }
 
-    private String formatDate(String dateStr) {
-        String d = dateStr;
+    private String formatDate(String d) {
         if (d == null || d.isEmpty()) return "";
         if (d.contains(" ")) d = d.split(" ")[0];
         return d.length() == 8 ? String.format("%s-%s-%s", d.substring(0,4), d.substring(4,6), d.substring(6,8)) : d;
     }
 
-    @Override protected String getProgramTitle() { return "Key맨 등록 프로그램"; }
+    @Override protected String getProgramTitle() { return "Key맨 등록"; }
     @Override protected String getProgramId() { return "MHSAA120U"; }
 }

@@ -678,7 +678,7 @@
                 <if test="rtncd != null and rtncd != ''"> and a.rtncd = #{rtncd} </if>
             </if>
         </where>
-        ORDER BY a.salesid DESC
+        ORDER BY A.SALESID DESC
     </select>
 
     <!-- 1. 영업마스터 (HSAA200T) -->
@@ -787,28 +787,16 @@
     </delete>
 
     <!-- 2. 상담일지 (HSAA300T) -->
-    <select id="selectDiary" resultType="com.crmbank.erp.hsaa.dto.Hsaa300tDto">
-        select a.cmpycd, a.salesid, a.ser, a.contdt, a.conthh, a.contmm, a.channel, a.channel_kind as channelkind, a.custid,
-        a.content, a.state, a.action_item as actionItem, a.action_status as actionStatus, a.next_meet_dt as nextMeetDt, a.next_meet_agenda as nextMeetAgenda
-        from hsaa300t_tbl a
-        where a.cmpycd = #{cmpycd} and a.salesid = #{salesid} and a.ser = #{ser}
-    </select>
-
-    <delete id="deleteManualVisitPlan" parameterType="map">
-        DELETE FROM hsaa_700t_tbl
-         WHERE cmpycd = #{cmpycd} AND userid = #{userid} AND salesid = #{salesid} AND plan_dt = #{plan_dt} AND plan_source = 'M'
-    </delete>
-
     <select id="selectDiaryList" resultType="com.crmbank.erp.hsaa.dto.Hsaa300tDto">
         select a.cmpycd, a.salesid, a.ser, a.contdt, a.conthh, a.contmm, a.channel, a.channel_kind as channelkind, a.custid,
         a.content, a.state, c.cdnm as statenm, a.chngdt, d.sales_remark, a.reportyn, a.report_content as reportcontent,
         a.startdate, a.diary_content as diarycontent, a.coaching_readyn as coachingreadyn, a.sales_coaching as salescoaching,
-        a.action_item as actionItem, a.action_status as actionStatus, a.next_meet_dt as nextMeetDt, a.next_meet_agenda as nextMeetAgenda,
         d.wincd, d.failcd, d.holdondt, d.holdcd, d.realamt, d.realdt, d.reportdt, a.addtime, a.updtime, a.updemp,
-        b.name as custnm, e.cdnm as channelnm
+        b.name as custnm, e.cdnm as channelnm,
+        a.action_item as actionitem, a.action_status as actionstatus, a.next_meet_dt as nextmeetdt, a.next_meet_agenda as nextmeetagenda
         from hsaa300t_tbl a
         left outer join hsaa100t_tbl b on a.cmpycd = b.cmpycd and a.custid = b.custid
-        left outer join hsaa200t_tbl d on a.cmpycd = d.cmpycd and a.salesid = b.salesid
+        left outer join hsaa200t_tbl d on a.cmpycd = d.cmpycd and a.salesid = d.salesid
         left outer join hsba900t_tbl c on a.cmpycd = c.cmpycd and c.cdgbn = '700' and a.state = c.code
         left outer join hsba900t_tbl e on a.cmpycd = e.cmpycd and e.cdgbn = '710' and a.channel = e.code
         where a.cmpycd = #{cmpycd} and a.salesid = #{salesid}
@@ -816,9 +804,9 @@
     </select>
 
     <select id="nextDiarySer" resultType="int">
-        select ifnull(max(ser), 0) + 1
+        select ifnull(max(CAST(ser AS UNSIGNED)), 0) + 1
         from hsaa300t_tbl
-        where cmpycd = #{cmpycd} and salesid = #{salesid}
+        where cmpycd = #{cmpycd} and contdt = #{contdt}
     </select>
 
     <insert id="insertDiary">
@@ -833,32 +821,37 @@
             #{contmm, jdbcType=INTEGER}, #{channel, jdbcType=VARCHAR}, #{channelkind, jdbcType=VARCHAR}, #{custid, jdbcType=VARCHAR},
             #{content, jdbcType=VARCHAR}, #{tostate, jdbcType=VARCHAR}, #{chngdt, jdbcType=VARCHAR}, #{reportyn, jdbcType=VARCHAR} ,
             #{reportcontent, jdbcType=VARCHAR}, #{startdate, jdbcType=VARCHAR}, #{diarycontent, jdbcType=VARCHAR},
-            #{actionItem, jdbcType=VARCHAR}, #{actionStatus, jdbcType=VARCHAR}, #{nextMeetDt, jdbcType=VARCHAR}, #{nextMeetAgenda, jdbcType=VARCHAR},
+            #{actionitem, jdbcType=VARCHAR}, #{actionstatus, jdbcType=VARCHAR}, #{nextmeetdt, jdbcType=VARCHAR}, #{nextmeetagenda, jdbcType=VARCHAR},
             #{addtime, jdbcType=VARCHAR}, #{updtime, jdbcType=VARCHAR}, #{updemp, jdbcType=VARCHAR}
         )
     </insert>
 
+    <select id="checkDiaryExists" parameterType="com.crmbank.erp.hsaa.dto.Hsaa300tDto" resultType="int">
+        select count(*) from hsaa300t_tbl
+        where cmpycd = #{cmpycd} and contdt = #{contdt} and ser = #{ser}
+    </select>
+
     <update id="updateDiary">
         update hsaa300t_tbl set
             deptcd = #{deptcd, jdbcType=VARCHAR}, userid = #{userid, jdbcType=VARCHAR}, custcd = #{custcd, jdbcType=VARCHAR},
-            contdt = #{contdt, jdbcType=VARCHAR}, conthh = #{conthh, jdbcType=INTEGER}, contmm = #{contmm, jdbcType=INTEGER},
+            contdt = #{contdt, jdbcType=VARCHAR}, conthh = #{conthh, jdbcType=INTEGER}, contmm = #{conthh, jdbcType=INTEGER},
             channel = #{channel, jdbcType=VARCHAR}, channel_kind = #{channelkind, jdbcType=VARCHAR}, custid = #{custid, jdbcType=VARCHAR},
             content = #{content, jdbcType=VARCHAR}, state = #{tostate, jdbcType=VARCHAR}, chngdt = #{chngdt, jdbcType=VARCHAR},
             reportyn = #{reportyn, jdbcType=VARCHAR}, report_content = #{reportcontent, jdbcType=VARCHAR},
             startdate = #{startdate, jdbcType=VARCHAR}, diary_content = #{diarycontent, jdbcType=VARCHAR},
-            action_item = #{actionItem, jdbcType=VARCHAR}, action_status = #{actionStatus, jdbcType=VARCHAR},
-            next_meet_dt = #{nextMeetDt, jdbcType=VARCHAR}, next_meet_agenda = #{nextMeetAgenda, jdbcType=VARCHAR},
+            action_item = #{actionitem, jdbcType=VARCHAR}, action_status = #{actionstatus, jdbcType=VARCHAR},
+            next_meet_dt = #{nextmeetdt, jdbcType=VARCHAR}, next_meet_agenda = #{nextmeetagenda, jdbcType=VARCHAR},
             updtime = #{updtime, jdbcType=VARCHAR}, updemp = #{updemp, jdbcType=VARCHAR}
-        where cmpycd = #{cmpycd, jdbcType=VARCHAR} and salesid = #{salesid, jdbcType=VARCHAR} and ser = #{ser, jdbcType=VARCHAR}
+        where cmpycd = #{cmpycd, jdbcType=VARCHAR} and contdt = #{contdt, jdbcType=VARCHAR} and ser = #{ser, jdbcType=VARCHAR}
     </update>
 
     <delete id="deleteDiary">
-        delete from hsaa300t_tbl where cmpycd = #{cmpycd} and salesid = #{salesid} and ser = #{ser, jdbcType=VARCHAR}
+        delete from hsaa300t_tbl where cmpycd = #{cmpycd} and contdt = #{contdt} and ser = #{ser, jdbcType=VARCHAR}
     </delete>
 
     <!-- 3. 단계변동 (HSAA310T) -->
     <select id="selectStageList" resultType="com.crmbank.erp.hsaa.dto.Hsaa310tDto">
-        select a.cmpycd, a.salesid,  a.chngdt, a.ser, a.state, a.wincd, a.failcd, a.holdcd,
+        select a.cmpycd, a.custcd, a.salesid, a.chngdt, a.ser, a.state, a.bfstate, a.wincd, a.failcd, a.holdcd,
                a.remark, a.addtime, a.updtime, a.updemp, b.cdnm as statenm
           from hsaa310t_tbl a
                left outer join hsba900t_tbl b
@@ -866,26 +859,27 @@
            and b.cdgbn = '700'
            and a.state = b.code
          where a.cmpycd = #{cmpycd}
+           and a.custcd = #{custcd}
            and a.salesid = #{salesid}
          order by a.ser desc
     </select>
 
     <delete id="deleteStage">
-        delete from hsaa310t_tbl where cmpycd = #{cmpycd} and salesid = #{salesid} and ser = #{ser, jdbcType=VARCHAR}
+        delete from hsaa310t_tbl where cmpycd = #{cmpycd} and custcd = #{custcd} and salesid = #{salesid} and ser = #{ser, jdbcType=VARCHAR}
     </delete>
 
     <select id="nextStageSer" resultType="int">
-        select ifnull(max(ser), 0) + 1
+        select ifnull(max(CAST(ser AS UNSIGNED)), 0) + 1
         from hsaa310t_tbl
-        where cmpycd = #{cmpycd} and salesid = #{salesid}
+        where cmpycd = #{cmpycd} and custcd = #{custcd} and salesid = #{salesid}
     </select>
 
     <insert id="insertStage">
         insert into hsaa310t_tbl (
-            cmpycd, custcd, salesid, ser, chngdt, state, bfstate, wincd, failcd, holdcd, remark, addtime, updtime, updemp
+            cmpycd, custcd, salesid, ser, chngdt, state, bfstate, userid, wincd, failcd, holdcd, foredelivdt, remark, addtime, updtime, updemp
         ) values (
-            #{cmpycd, jdbcType=VARCHAR}, #{custcd, jdbcType=VARCHAR}, #{salesid, jdbcType=VARCHAR}, #{ser, jdbcType=VARCHAR}, #{chngdt, jdbcType=VARCHAR}, #{state, jdbcType=VARCHAR}, #{bfstate, jdbcType=VARCHAR},
-            #{wincd, jdbcType=VARCHAR}, #{failcd, jdbcType=VARCHAR}, #{holdcd, jdbcType=VARCHAR}, #{remark, jdbcType=VARCHAR},
+            #{cmpycd, jdbcType=VARCHAR}, #{custcd, jdbcType=VARCHAR}, #{salesid, jdbcType=VARCHAR}, #{ser, jdbcType=VARCHAR}, #{chngdt, jdbcType=VARCHAR}, #{state, jdbcType=VARCHAR}, #{bfstate, jdbcType=VARCHAR}, #{userid, jdbcType=VARCHAR},
+            #{wincd, jdbcType=VARCHAR}, #{failcd, jdbcType=VARCHAR}, #{holdcd, jdbcType=VARCHAR}, #{foredelivdt, jdbcType=VARCHAR}, #{remark, jdbcType=VARCHAR},
             #{addtime, jdbcType=VARCHAR}, #{updtime, jdbcType=VARCHAR}, #{updemp, jdbcType=VARCHAR}
         )
     </insert>
@@ -937,8 +931,8 @@
 
     <!-- 5. 문서관리 (HSAA320T) -->
     <select id="selectDocsList" resultType="com.crmbank.erp.hsaa.dto.Hsaa320tDto">
-        select a.cmpycd, a.custcd, a.salesid, a.ser, a.docgb, b.cdnm as docgbnm,
-               a.title, a.filename, a.regdt, a.addtime, a.updtime, a.updemp
+        select a.cmpycd, a.regdt, a.ser, a.custcd, a.salesid, a.docgb, b.cdnm as docgbnm,
+               a.title, a.filename, a.userid, a.addtime, a.updtime, a.updemp
           from hsaa320t_tbl a left outer join hsba900t_tbl b
             on a.cmpycd = b.cmpycd
            and b.cdgbn = '780'
@@ -950,21 +944,26 @@
 
     <insert id="insertDoc">
         insert into hsaa320t_tbl (
-            cmpycd, custcd, salesid, ser, docgb, title, filename, regdt, addtime, updtime, updemp
+            cmpycd, regdt, ser,
+            custcd, salesid, docgb,
+            title, filename, userid,
+            addtime, updtime, updemp
         ) values (
-            #{cmpycd, jdbcType=VARCHAR}, #{custcd, jdbcType=VARCHAR}, #{salesid, jdbcType=VARCHAR}, #{ser, jdbcType=VARCHAR}, #{docgb, jdbcType=VARCHAR}, #{title, jdbcType=VARCHAR}, #{filename, jdbcType=VARCHAR},
-            #{regdt, jdbcType=VARCHAR}, #{addtime, jdbcType=VARCHAR}, #{updtime, jdbcType=VARCHAR}, #{updemp, jdbcType=VARCHAR}
+            #{cmpycd, jdbcType=VARCHAR}, #{regdt, jdbcType=VARCHAR}, #{ser, jdbcType=VARCHAR},
+            #{custcd, jdbcType=VARCHAR}, #{salesid, jdbcType=VARCHAR}, #{docgb, jdbcType=VARCHAR},
+            #{title, jdbcType=VARCHAR}, #{filename, jdbcType=VARCHAR}, #{userid, jdbcType=VARCHAR},
+            #{addtime, jdbcType=VARCHAR}, #{updtime, jdbcType=VARCHAR}, #{updemp, jdbcType=VARCHAR}
         )
     </insert>
 
     <select id="nextDocSer" resultType="int">
-        SELECT IFNULL(MAX(SER), 0) + 1
+        SELECT IFNULL(MAX(CAST(SER AS UNSIGNED)), 0) + 1
         FROM HSAA320T_TBL
-        WHERE CMPYCD = #{cmpycd} AND SALESID = #{salesid}
+        WHERE CMPYCD = #{cmpycd} AND REGDT = #{regdt}
     </select>
 
     <delete id="deleteDoc">
-        DELETE FROM HSAA320T_TBL WHERE CMPYCD = #{cmpycd} AND SALESID = #{salesid} AND SER = #{ser, jdbcType=VARCHAR}
+        DELETE FROM HSAA320T_TBL WHERE CMPYCD = #{cmpycd} AND regdt = #{regdt} AND SER = #{ser, jdbcType=VARCHAR}
     </delete>
 
     <!-- 7. HSAA200U 영업상담이관 -->
@@ -1048,31 +1047,16 @@
         DELETE FROM HSAA810T_TBL WHERE CMPYCD = #{cmpycd} AND SALESID = #{salesid}
     </delete>
 
-    <!-- 통합 주소록 동기화 (hsba130t_tbl) - 동일 주소 존재 시 중복 등록 배제 및 키맨 이름 저장 -->
+    <!-- 통합 주소록 동기화 (HSBA130T_TBL) -->
     <update id="syncHsba130t">
-        <if test="address != null and address != ''">
-            INSERT INTO hsba130t_tbl (CMPYCD, CUSTCD, TRANCD, ADDRESS, DAMDANG, TELNO, EMAIL, ADDTIME, UPDTIME, UPDEMP, USEYN)
-            SELECT #{cmpycd}, #{custcd},
-                   IFNULL((SELECT LPAD(CAST(IFNULL(MAX(CAST(TRANCD AS UNSIGNED)), 0) + 1 AS CHAR), 2, '0') FROM hsba130t_tbl WHERE CMPYCD = #{cmpycd} AND CUSTCD = #{custcd}), '01'),
-                   #{address}, COALESCE(#{name}, #{keymannm}), #{hpno}, #{mail}, NOW(), NOW(), #{updemp}, 'Y'
-            FROM DUAL
-            WHERE NOT EXISTS (
-                SELECT 1 FROM hsba130t_tbl
-                 WHERE CMPYCD = #{cmpycd}
-                   AND CUSTCD = #{custcd}
-                   AND ADDRESS = #{address}
-            );
-
-            UPDATE hsba130t_tbl
-               SET DAMDANG = COALESCE(#{name}, #{keymannm}),
-                   TELNO = #{hpno},
-                   EMAIL = #{mail},
-                   UPDTIME = NOW(),
-                   UPDEMP = #{updemp}
-             WHERE CMPYCD = #{cmpycd}
-               AND CUSTCD = #{custcd}
-               AND ADDRESS = #{address};
-        </if>
+        INSERT INTO HSBA130T_TBL (CMPYCD, CUSTCD, TRANCD, ADDRESS, DAMDANG, TELNO, EMAIL, ADDTIME, UPDTIME, UPDEMP, USEYN)
+        VALUES (#{cmpycd}, #{custcd}, IFNULL((SELECT TRANCD FROM (SELECT TRANCD FROM HSBA130T_TBL WHERE CMPYCD = #{cmpycd} AND CUSTCD = #{custcd} ORDER BY TRANCD DESC LIMIT 1) x), '01'), #{address}, #{name}, #{hpno}, #{mail}, NOW(), NOW(), #{updemp}, 'Y')
+        ON DUPLICATE KEY UPDATE
+            TELNO = #{hpno},
+            EMAIL = #{mail},
+            ADDRESS = #{address},
+            UPDTIME = NOW(),
+            UPDEMP = #{updemp}
     </update>
 
     <!-- 전화번호부 동기화 (phone_number_map) -->
@@ -1094,34 +1078,9 @@
         ORDER BY DSPORD
     </select>
 
-    <!-- 방문 계획 자동 수립 관련 쿼리 (hsaa_700t_tbl 연동) -->
-    <select id="selectExistingVisitPlan" parameterType="map" resultType="map">
-        SELECT cmpycd, userid, plan_dt, salesid, custcd, custnm, salestitle, import_nm, succrate, lastmtdt, address, d_address, status
-          FROM hsaa_700t_tbl
-         WHERE cmpycd = #{cmpycd} AND userid = #{userid} AND plan_dt LIKE CONCAT(#{ym}, '%')
-         ORDER BY plan_dt
-    </select>
-
-    <update id="upsertVisitPlan" parameterType="map">
-        INSERT INTO hsaa_700t_tbl (cmpycd, userid, plan_dt, salesid, custcd, custnm, salestitle, import_nm, succrate, lastmtdt, address, d_address, status, plan_source, updemp)
-        VALUES (#{cmpycd}, #{userid}, #{plan_dt}, #{salesid}, #{custcd}, #{custnm}, #{salestitle}, #{import_nm}, #{succrate}, #{lastmtdt}, #{address}, #{d_address}, '2', COALESCE(#{plan_source}, 'A'), #{userid})
-        ON DUPLICATE KEY UPDATE
-            custnm = VALUES(custnm),
-            salestitle = VALUES(salestitle),
-            import_nm = VALUES(import_nm),
-            succrate = VALUES(succrate),
-            lastmtdt = VALUES(lastmtdt),
-            address = VALUES(address),
-            d_address = VALUES(d_address),
-            status = '2',
-            plan_source = COALESCE(#{plan_source}, plan_source),
-            updtime = NOW(),
-            updemp = VALUES(updemp)
-    </update>
-
     <!-- 방문 계획 자동 수립 관련 쿼리 -->
     <select id="selectActiveDealsForVisitPlan" parameterType="map" resultType="map">
-        SELECT a.salesid, a.salestitle, a.custcd, a.custnm, a.import, a.succrate, a.lastmtdt,
+        SELECT a.salesid, a.salestitle as deal_title, a.custcd, a.custnm, a.import, a.succrate, a.lastmtdt,
                COALESCE(b.latitude, 37.5665) as latitude, COALESCE(b.longitude, 126.9780) as longitude, COALESCE(b.address, '') as address
           FROM hsaa200t_tbl a
           LEFT JOIN hsba130t_tbl b ON a.cmpycd = b.cmpycd AND a.custcd = b.custcd
@@ -1136,41 +1095,26 @@
         SELECT holi_dt FROM pd_holiday WHERE cmpycd = #{cmpycd} AND holi_dt LIKE CONCAT(#{ym}, '%')
     </select>
 
-    <!-- 주간 영업활동 보고서 관련 쿼리 -->
-    <select id="selectWeeklyReport" parameterType="map" resultType="map">
-        SELECT cmpycd, userid, week_id, sdate, edate, last_week_perf, next_week_plan, issues_comments, status
-          FROM hsaa_500t_tbl
-         WHERE cmpycd = #{cmpycd} AND userid = #{userid} AND week_id = #{weekid}
+    <select id="selectVisitPlan" resultType="map">
+        select cmpycd, userid, plan_dt, salesid, custcd, custnm, salestitle as deal_title, import_nm, succrate, lastmtdt, address, status, plan_source
+        from hsaa_700t_tbl
+        where cmpycd = #{cmpycd} and userid = #{userid} and left(plan_dt, 6) = #{ym}
+        order by plan_dt asc
     </select>
 
-    <update id="upsertWeeklyReport" parameterType="map">
-        INSERT INTO hsaa_500t_tbl (cmpycd, userid, week_id, sdate, edate, last_week_perf, next_week_plan, issues_comments, status, updemp)
-        VALUES (#{cmpycd}, #{userid}, #{week_id}, #{sdate}, #{edate}, #{last_week_perf}, #{next_week_plan}, #{issues_comments}, COALESCE(#{status}, '1'), #{userid})
-        ON DUPLICATE KEY UPDATE
-            sdate = VALUES(sdate),
-            edate = VALUES(edate),
-            last_week_perf = VALUES(last_week_perf),
-            next_week_plan = VALUES(next_week_plan),
-            issues_comments = VALUES(issues_comments),
-            status = COALESCE(#{status}, status),
-            updtime = NOW(),
-            updemp = VALUES(updemp)
-    </update>
+    <delete id="deleteVisitPlanItem">
+        delete from hsaa_700t_tbl
+        where cmpycd = #{cmpycd} and userid = #{userid} and salesid = #{salesid} and plan_dt = #{plan_dt}
+    </delete>
 
-    <select id="selectLastWeekConsultations" parameterType="map" resultType="map">
-        SELECT a.contdt, a.salesid, d.salestitle, b.name as custnm, a.diary_content, a.action_item, a.action_status, a.next_meet_dt, a.next_meet_agenda
-          FROM hsaa300t_tbl a
-          LEFT JOIN hsaa100t_tbl b ON a.cmpycd = b.cmpycd AND a.custid = b.custid
-          LEFT JOIN hsaa200t_tbl d ON a.cmpycd = d.cmpycd AND a.salesid = d.salesid
-         WHERE a.cmpycd = #{cmpycd} AND a.userid = #{userid} AND a.contdt BETWEEN #{sdate} AND #{edate}
-         ORDER BY a.contdt DESC
-    </select>
-
-    <select id="selectNextWeekVisitPlans" parameterType="map" resultType="map">
-        SELECT plan_dt, custnm, salestitle, import_nm, succrate, address
-          FROM hsaa_700t_tbl
-         WHERE cmpycd = #{cmpycd} AND userid = #{userid} AND plan_dt BETWEEN #{sdate} AND #{edate}
-         ORDER BY plan_dt
-    </select>
+    <insert id="insertVisitPlan">
+        insert into hsaa_700t_tbl (
+            cmpycd, userid, plan_dt, salesid, custcd, custnm, salestitle, import_nm, succrate, lastmtdt, address, status, plan_source, updemp
+        ) values (
+            #{cmpycd}, #{userid}, #{plan_dt}, #{salesid}, #{custcd}, #{custnm}, #{deal_title}, #{import_nm}, #{succrate}, #{lastmtdt}, #{address}, '1', 'A', #{updemp}
+        )
+        on duplicate key update
+            custnm = values(custnm), salestitle = values(salestitle), import_nm = values(import_nm), succrate = values(succrate), address = values(address), updemp = values(updemp), updtime = NOW()
+    </insert>
 
 </mapper>

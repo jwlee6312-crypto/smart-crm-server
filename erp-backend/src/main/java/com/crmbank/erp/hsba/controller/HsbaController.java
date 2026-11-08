@@ -312,38 +312,6 @@ public class HsbaController {
         }
         return coords;
     }
-
-    @PostMapping("/batch-geocode")
-    public ResponseEntity<?> batchGeocode(@RequestBody Map<String, Object> params, HttpSession session) {
-        injectSession(params, session);
-        String cmpycd = String.valueOf(params.getOrDefault("cmpycd", ""));
-
-        List<Map<String, Object>> rows = hsbaMapper.selectUngeocodedAddresses(cmpycd);
-        int updatedCount = 0;
-
-        for (Map<String, Object> row : rows) {
-            String custcd = String.valueOf(row.getOrDefault("custcd", ""));
-            String trancd = String.valueOf(row.getOrDefault("trancd", ""));
-            String address = String.valueOf(row.getOrDefault("address", ""));
-
-            if (address.isEmpty()) continue;
-
-            Map<String, Double> latLon = getLatLonFromAddress(address);
-            Map<String, Object> updateParams = new HashMap<>();
-            updateParams.put("cmpycd", cmpycd);
-            updateParams.put("custcd", custcd);
-            updateParams.put("trancd", trancd);
-            updateParams.put("latitude", latLon.get("lat"));
-            updateParams.put("longitude", latLon.get("lon"));
-
-            hsbaMapper.updateLatLon(updateParams);
-            updatedCount++;
-
-            try { Thread.sleep(500); } catch (Exception ignored) {}
-        }
-
-        return ResponseEntity.ok(Map.of("result", "OK", "msg", updatedCount + "건의 위경도 좌표가 일괄 업데이트되었습니다."));
-    }
 //
 //    @PostMapping("/HSBA_140U_STR")
 //    public ResponseEntity<?> callHSBA_140U_STR(@RequestBody Map<String, Object> params, HttpSession session) {

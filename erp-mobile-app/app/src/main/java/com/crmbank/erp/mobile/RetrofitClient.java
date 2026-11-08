@@ -45,7 +45,7 @@ public class RetrofitClient {
             logging.setLevel(HttpLoggingInterceptor.Level.NONE); 
 
             Gson gson = new GsonBuilder()
-                    .setFieldNamingPolicy(FieldNamingPolicy.IDENTITY)
+                    .setFieldNamingPolicy(FieldNamingPolicy.UPPER_CAMEL_CASE)
                     .create();
 
             // 🚀 디스크 캐시 설정

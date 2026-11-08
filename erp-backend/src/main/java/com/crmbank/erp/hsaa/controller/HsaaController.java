@@ -19,6 +19,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/hsaa")
 @RequiredArgsConstructor
+@SuppressWarnings({"unused", "SpringJavaInjectionPointsAutowiringInspection"})
 public class HsaaController {
 
     private final HsaaService hsaaService;
@@ -109,6 +110,7 @@ public class HsaaController {
             
             master.setCmpycd(user.getCmpycd());
             master.setDeptcd(user.getDeptcd());
+            master.setUserid(user.getUserid());
             master.setUpdemp(user.getUserid());
             
             String salesid = hsaaService.saveSalesMaster(master, items);
@@ -158,6 +160,7 @@ public class HsaaController {
             diary.setUserid(user.getUserid());
             diary.setDeptcd(user.getDeptcd());
             diary.setUpdemp(user.getUserid());
+
             hsaaService.saveDiary(diary);
             return ResponseEntity.ok(ApiResponse.success("상담일지 저장 성공"));
         } catch (Exception e) {
@@ -229,13 +232,13 @@ public class HsaaController {
 
     @GetMapping("/stages")
     public ResponseEntity<ApiResponse<List<Hsaa310tDto>>> getStageList(
-            @RequestParam String salesid,
+            @RequestParam String salesid, @RequestParam String custcd,
             HttpSession session) {
         
         UserSession user = (UserSession) session.getAttribute("user_session");
         if (user == null) return ResponseEntity.status(401).build();
 
-        List<Hsaa310tDto> result = hsaaService.getStageList(user.getCmpycd(), salesid);
+        List<Hsaa310tDto> result = hsaaService.getStageList(user.getCmpycd(), salesid, custcd);
         return ResponseEntity.ok(ApiResponse.success(result, "조회 성공"));
     }
 
@@ -248,6 +251,9 @@ public class HsaaController {
 
         try {
             stage.setCmpycd(user.getCmpycd());
+            if (stage.getUserid() == null || stage.getUserid().isEmpty()) {
+                stage.setUserid(user.getUserid());
+            }
             stage.setUpdemp(user.getUserid());
             hsaaService.saveStage(stage);
             return ResponseEntity.ok(ApiResponse.success("단계변동 저장 성공"));
@@ -259,32 +265,55 @@ public class HsaaController {
 
     @GetMapping("/docs")
     public ResponseEntity<ApiResponse<List<Hsaa320tDto>>> getDocsList(
-            @RequestParam String salesid,
+            @RequestParam String salesid, @RequestParam String custcd,
             HttpSession session) {
         
         UserSession user = (UserSession) session.getAttribute("user_session");
         if (user == null) return ResponseEntity.status(401).build();
 
-        List<Hsaa320tDto> result = hsaaService.getDocsList(user.getCmpycd(), salesid);
+        List<Hsaa320tDto> result = hsaaService.getDocsList(user.getCmpycd(), salesid, custcd);
         return ResponseEntity.ok(ApiResponse.success(result, "조회 성공"));
     }
 
     @PostMapping(value = "/docs/save", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<?>> saveDoc(
-            @RequestPart("doc") String docJson,
+            @RequestParam(required = false) String salesid,
+            @RequestParam(required = false) String custcd,
+            @RequestParam(required = false) String docgb,
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String regdt,
+            @RequestParam(required = false) String ser,
+            @RequestPart(value = "doc", required = false) String docJson,
             @RequestPart(value = "file", required = false) org.springframework.web.multipart.MultipartFile file,
             HttpSession session) {
         UserSession user = (UserSession) session.getAttribute("user_session");
         if (user == null) return ResponseEntity.status(401).build();
 
         try {
-            Hsaa320tDto doc = objectMapper.readValue(docJson, Hsaa320tDto.class);
-            doc.setCmpycd(user.getCmpycd());
+            Hsaa320tDto doc;
+            if (docJson != null && !docJson.isEmpty()) {
+                doc = objectMapper.readValue(docJson, Hsaa320tDto.class);
+            } else {
+                doc = new Hsaa320tDto();
+                doc.setSalesid(salesid);
+                doc.setCustcd(custcd);
+                doc.setDocgb(docgb);
+                doc.setTitle(title);
+                doc.setRegdt(regdt);
+                doc.setSer(ser);
+            }
+            if (doc.getCmpycd() == null || doc.getCmpycd().isEmpty()) {
+                doc.setCmpycd(user.getCmpycd());
+            }
+            if (doc.getUserid() == null || doc.getUserid().isEmpty()) {
+                doc.setUserid(user.getUserid());
+            }
             doc.setUpdemp(user.getUserid());
+
             hsaaService.saveDoc(doc, file);
             return ResponseEntity.ok(ApiResponse.success("문서 저장 및 업로드 성공"));
         } catch (Exception e) {
-            log.error("❌ [HSAA] 문서 저장 오류: {}", e.getMessage());
+            log.error("❌ [HSAA] 문서 저장 오류: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError().body(ApiResponse.serverError(e.getMessage()));
         }
     }
@@ -556,10 +585,23 @@ public class HsaaController {
         UserSession user = (UserSession) session.getAttribute("user_session");
         if (user == null) return ResponseEntity.status(401).build();
 
+        log.info("📌 [VisitPlan Controller] received payload: {}", payload);
+
         String ym = String.valueOf(payload.getOrDefault("ym", ""));
         String userid = String.valueOf(payload.getOrDefault("userid", user.getUserid()));
-        int dailyCapa = Integer.parseInt(String.valueOf(payload.getOrDefault("dailyCapa", "4")));
+        Object dcObj = payload.get("dailyCapa");
+        if (dcObj == null) dcObj = payload.get("dailycapa");
+        if (dcObj == null) {
+            throw new IllegalArgumentException("일일 방문 CAPA(dailyCapa) 값이 전달되지 않았습니다.");
+        }
+        int dailyCapa;
+        try {
+            dailyCapa = ((Number) dcObj).intValue();
+        } catch (Exception e) {
+            dailyCapa = Integer.parseInt(String.valueOf(dcObj).trim());
+        }
 
+        log.info("📌 [VisitPlan Controller] received dailyCapa={}", dailyCapa);
         List<Map<String, Object>> plan = hsaaService.generateVisitPlan(user.getCmpycd(), ym, userid, dailyCapa);
         return ResponseEntity.ok(ApiResponse.success(plan, "방문 계획 자동 수립 성공"));
     }
@@ -586,37 +628,18 @@ public class HsaaController {
         return ResponseEntity.ok(ApiResponse.success(result, "조회 성공"));
     }
 
-    // --- HSAA500U 자동 주간 영업활동 보고서 API ---
+    // --- MHSAA500U 주간영업보고 API ---
 
     @GetMapping("/weekly-report")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getWeeklyReport(
-            @RequestParam(required = false) String weekid,
-            @RequestParam(required = false) String userid,
+            @RequestParam String weekid,
+            @RequestParam String userid,
             HttpSession session) {
         UserSession user = (UserSession) session.getAttribute("user_session");
         if (user == null) return ResponseEntity.status(401).build();
 
-        String targetUser = (userid == null || userid.isEmpty()) ? user.getUserid() : userid;
-        Map<String, Object> report = hsaaService.getWeeklyReport(user.getCmpycd(), targetUser, weekid);
-        return ResponseEntity.ok(ApiResponse.success(report, "조회 성공"));
-    }
-
-    @PostMapping("/weekly-report/auto-generate")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> autoGenerateWeeklyReport(
-            @RequestBody Map<String, Object> payload,
-            HttpSession session) {
-        UserSession user = (UserSession) session.getAttribute("user_session");
-        if (user == null) return ResponseEntity.status(401).build();
-
-        String weekId = String.valueOf(payload.getOrDefault("weekId", ""));
-        String userid = String.valueOf(payload.getOrDefault("userid", user.getUserid()));
-        String sdate = String.valueOf(payload.getOrDefault("sdate", ""));
-        String edate = String.valueOf(payload.getOrDefault("edate", ""));
-        String nextSdate = String.valueOf(payload.getOrDefault("nextSdate", ""));
-        String nextEdate = String.valueOf(payload.getOrDefault("nextEdate", ""));
-
-        Map<String, Object> report = hsaaService.autoGenerateWeeklyReport(user.getCmpycd(), userid, weekId, sdate, edate, nextSdate, nextEdate);
-        return ResponseEntity.ok(ApiResponse.success(report, "자동 생성 성공"));
+        Map<String, Object> result = hsaaService.getWeeklyReport(user.getCmpycd(), weekid, userid);
+        return ResponseEntity.ok(ApiResponse.success(result, "조회 성공"));
     }
 
     @PostMapping("/weekly-report/save")
@@ -626,9 +649,18 @@ public class HsaaController {
         UserSession user = (UserSession) session.getAttribute("user_session");
         if (user == null) return ResponseEntity.status(401).build();
 
-        payload.put("cmpycd", user.getCmpycd());
-        payload.put("userid", payload.getOrDefault("userid", user.getUserid()));
         hsaaService.saveWeeklyReport(payload, user.getCmpycd());
-        return ResponseEntity.ok(ApiResponse.success("주간보고서 저장 성공"));
+        return ResponseEntity.ok(ApiResponse.success("저장 성공"));
+    }
+
+    @PostMapping("/weekly-report/auto")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> autoGenerateWeeklyReport(
+            @RequestBody Map<String, Object> payload,
+            HttpSession session) {
+        UserSession user = (UserSession) session.getAttribute("user_session");
+        if (user == null) return ResponseEntity.status(401).build();
+
+        Map<String, Object> result = hsaaService.autoGenerateWeeklyReport(payload, user.getCmpycd());
+        return ResponseEntity.ok(ApiResponse.success(result, "자동 생성 성공"));
     }
 }

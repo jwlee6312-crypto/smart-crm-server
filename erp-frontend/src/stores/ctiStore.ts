@@ -10,7 +10,7 @@ export const useCtiStore = defineStore('cti', () => {
 	const isDrawerOpen = ref(false)
 	const isTalking = ref(false)
 	const recordingFile = ref('') // 💡 녹취 파일명 저장용
-	
+
 	let socket: WebSocket | null = null
 	let ringtoneAudio: HTMLAudioElement | null = null
 
@@ -19,7 +19,7 @@ export const useCtiStore = defineStore('cti', () => {
 		if (!targetExten) return;
 		if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) return;
 
-		// 💡 [서버 환경 대응] 도메인이 아닌 서버 IP 환경에서도 소켓이 정확히 연결되도록 보정
+		// 📌 [FINAL CTI WEBSOCKET STANDARD] - /api/ws/cti (Context Path /api applied)
 		const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 		const host = window.location.host; // 172.30.1.11:80 형식 대응
 		const wsUrl = `${protocol}//${host}/api/ws/cti?exten=${targetExten}`;

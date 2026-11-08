@@ -18,19 +18,19 @@ public class Hsaa300tDto {
     private String channel;
     private String channelkind;
     private String custid;
-    private String custnm; // Added
-    private String channelnm; // Added
+    private String custnm;
+    private String channelnm;
     private String content;
     private String tostate;
     private String statenm;
     private String chngdt;
     private String remark;
     private String reportyn;
-    private String reportcontent; // 확인요청내용
-    private String reportcd; // Added
-    private String coachingcd; // Added
-    private String coachingreadyn; // 코칭확인여부
-    private String salescoaching; // Added
+    private String reportcontent;
+    private String reportcd;
+    private String coachingcd;
+    private String coachingreadyn;
+    private String salescoaching;
     private String startdate;
     private String diarycontent;
     private String wincd;
@@ -42,11 +42,12 @@ public class Hsaa300tDto {
     private String hpno;
     private String custtel;
     private String usernm;
-    private String actionItem;
-    private String actionStatus;
-    private String nextMeetDt;
-    private String nextMeetAgenda;
     private String addtime;
     private String updtime;
     private String updemp;
+
+    private String actionitem;
+    private String actionstatus;
+    private String nextmeetdt;
+    private String nextmeetagenda;
 }

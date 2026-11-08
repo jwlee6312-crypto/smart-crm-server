@@ -214,21 +214,21 @@
                                 </td>
                             </tr>
                             <tr>
-                                <th class="bg-light text-primary fw-bold">후속조치(Action)</th>
-                                <td colspan="3"><input v-model="formDiary.actionItem" type="text" class="form-control form-control-sm" placeholder="예: 견적서 재발송 및 상세 스펙 전달" /></td>
-                                <th class="bg-light border-start text-primary fw-bold">조치완료여부</th>
-                                <td>
+                                <th class="bg-light border-top">후속조치</th>
+                                <td colspan="3"><input v-model="formDiary.actionitem" type="text" class="form-control form-control-sm" placeholder="예: 견적서 재발송 및 상세 스펙 전달" /></td>
+                                <th class="bg-light border-start border-top">조치완료여부</th>
+                                <td class="border-top">
                                     <div class="form-check form-switch m-0">
-                                        <input v-model="formDiary.actionStatus" class="form-check-input" type="checkbox" true-value="1" false-value="0" id="swActionStatus">
-                                        <label class="form-check-label ms-1 small fw-bold" for="swActionStatus">{{ formDiary.actionStatus === '1' ? '완료' : '미해결' }}</label>
+                                        <input v-model="formDiary.actionstatus" class="form-check-input" type="checkbox" true-value="Y" false-value="N" id="hsaa100ActionStatus">
+                                        <label class="form-check-label ms-1 small fw-bold" for="hsaa100ActionStatus">{{ formDiary.actionstatus === 'Y' ? '완료' : '미해결' }}</label>
                                     </div>
                                 </td>
                             </tr>
                             <tr>
-                                <th class="bg-light text-danger fw-bold">다음 미팅일</th>
-                                <td><input type="date" v-model="formDiary.nextMeetDt" class="form-control form-control-sm" /></td>
-                                <th class="bg-light border-start text-danger fw-bold">다음 미팅 안건</th>
-                                <td colspan="3"><input v-model="formDiary.nextMeetAgenda" type="text" class="form-control form-control-sm" placeholder="다음 미팅 주요 안건 및 목표 입력" /></td>
+                                <th class="bg-light">다음미팅일자</th>
+                                <td><input type="date" v-model="formDiary.nextmeetdt" class="form-control form-control-sm" /></td>
+                                <th class="bg-light border-start">다음미팅안건</th>
+                                <td colspan="3"><input v-model="formDiary.nextmeetagenda" type="text" class="form-control form-control-sm" placeholder="다음 미팅 안건" /></td>
                             </tr>
                             <tr>
                                 <th class="bg-light border-top border-bottom">상담본문</th>
@@ -321,11 +321,19 @@
                     <table v-if="activeTab === 'DOCS'" class="erp-table-dense w-100">
                         <tbody>
                             <tr>
-                                <th class="bg-light" style="width: 100px;">문서유형</th>
-                                <td style="width: 180px;"><select v-model="formDocs.docgb" class="form-select form-select-sm"><option value="">선택</option><option v-for="d in docGbData" :key="d.code" :value="d.code">{{ d.cdnm }}</option></select></td>
-                                <th class="bg-light border-start" style="width: 100px;">문서제목</th>
+                                <th class="bg-light" style="width: 90px;">문서번호</th>
+                                <td style="width: 220px;">
+                                    <div class="d-flex align-items-center gap-1">
+                                        <input v-model="formDocs.regdt" type="date" class="form-control form-control-sm" style="width: 130px;" />
+                                        <span>-</span>
+                                        <input v-model="formDocs.ser" class="form-control form-control-sm text-center" placeholder="001" style="width: 60px;" maxlength="3" />
+                                    </div>
+                                </td>
+                                <th class="bg-light" style="width: 90px;">문서유형</th>
+                                <td style="width: 120px;"><select v-model="formDocs.docgb" class="form-select form-select-sm"><option value="">선택</option><option v-for="d in docGbData" :key="d.code" :value="d.code">{{ d.cdnm }}</option></select></td>
+                                <th class="bg-light border-start" style="width: 90px;">문서제목</th>
                                 <td><input v-model="formDocs.title" class="form-control form-control-sm" /></td>
-                                <th class="bg-light border-start" style="width: 100px;">파일업로드</th>
+                                <th class="bg-light border-start" style="width: 90px;">파일업로드</th>
                                 <td><input type="file" class="form-control form-control-sm" @change="handleFileChange" /></td>
                             </tr>
                         </tbody>
@@ -369,6 +377,7 @@ import DateForm from '@/components/DateForm.vue'
 import AddressPopupForm from '@/components/AddressPopupForm.vue'
 import { api } from '@/utils/axios'
 import { useAuthStore } from '@/stores/authStore'
+import { API_URL } from '@/config/api'
 import { useFormReset } from '@/composables/useFormReset'
 import { useCommonHelp } from '@/composables/useCommonHelp'
 import { getDate } from '@/composables/useDate'
@@ -414,10 +423,10 @@ const formSales = reactive<any>({
     salesremark: '', choice: '200', importrank: '200', foredelivdt: today, svcno: '',
     wincd: '', failcd: '', holdcd: '', realdt: today, faildt: today, holdondt: today
 })
-const formDiary = reactive<any>({ ser: '', contdt: today, conthh: 10, contmm: 0, channel: '020', channelkind: '', custid: '', diarycontent: `[상담 목적]\n- \n\n[상담 내용]\n- \n\n[향후 계획/요청사항]\n- `, content: '', tostate: '', remark: '', reportyn: false, reportcontent: '', hpno: '', custtel: '', wincd: '', failcd: '', holdcd: '', realamt: 0, realdt: today, holdondt: today, salescoaching: '', reportdt: '', actionItem: '', actionStatus: '0', nextMeetDt: '', nextMeetAgenda: '' })
+const formDiary = reactive<any>({ ser: '', contdt: today, conthh: 10, contmm: 0, channel: '020', channelkind: '', custid: '', diarycontent: `[상담 목적]\n- \n\n[상담 내용]\n- \n\n[향후 계획/요청사항]\n- `, content: '', tostate: '', remark: '', reportyn: 'N', reportcontent: '', hpno: '', custtel: '', wincd: '', failcd: '', holdcd: '', realamt: 0, realdt: today, holdondt: today, salescoaching: '', reportdt: '', actionitem: '', actionstatus: 'N', nextmeetdt: '', nextmeetagenda: '' })
 const formKeyman = reactive<any>({ custid: '', name: '', hpno: '', custdept: '', jikch: '', mail: '', mail2: '', custtel: '', innumber: '', birthday: today, birgb: '1', keyman: '040', level: '200', favor: '720', haddress: '', remark: '' })
 const formStage = reactive<any>({ ser: '', chngdt: today, bfstatenm: '', state: '', remark: '', wincd: '', failcd: '', holdcd: '', realamt: 0, realdt: today, bfstate: '' })
-const formDocs = reactive<any>({ ser: '', docgb: '', title: '', filename: '', file: null })
+const formDocs = reactive<any>({ regdt: today, ser: '', docgb: '', title: '', filename: '', file: null })
 
 // 영업담당자 변경 시 부서 자동 매핑
 watch(() => formSales.userid, (newVal) => {
@@ -488,6 +497,8 @@ const resetCurrentTab = () => {
     resetForm(formStage)
   } else if (activeTab.value === 'DOCS') {
     resetForm(formDocs)
+    formDocs.regdt = today
+    formDocs.ser = ''
   }
 }
 
@@ -552,7 +563,8 @@ const fetchSubData = async (row: any) => {
       // 2. 상담일지
       const resDiary = await api.get('/hsaa/diary', { params: { salesid } })
       const formattedDiary = (resDiary.data || []).map((d: any) => ({ ...d,
-        contdt: fYmd(d.contdt)
+        contdt: fYmd(d.contdt),
+        nextmeetdt: fYmd(d.nextmeetdt)
       }))
       gridDiary?.setData(formattedDiary)
 
@@ -564,12 +576,12 @@ const fetchSubData = async (row: any) => {
       }
 
       // 4. 단계변동
-      const resStages = await api.get('/hsaa/stages', { params: { salesid } })
+      const resStages = await api.get('/hsaa/stages', { params: { salesid, custcd } })
       const formattedStages = (resStages.data || []).map((s: any) => ({ ...s, chngdt: fYmd(s.chngdt) }))
       gridStages?.setData(formattedStages)
 
       // 5. 문서
-      const resDocs = await api.get('/hsaa/docs', { params: { salesid } })
+      const resDocs = await api.get('/hsaa/docs', { params: { salesid, custcd } })
       gridDocs?.setData(resDocs.data || [])
 
     } catch (e: any) {
@@ -638,7 +650,11 @@ const saveCurrentTab = async () => {
         content: summary,
         contdt: formDiary.contdt?.replace(/-/g, ''),
         startdate: formDiary.contdt?.replace(/-/g, ''), // 시작일자도 상담일자로 동기화
-        realdt: formDiary.realdt?.replace(/-/g, '')
+        realdt: formDiary.realdt?.replace(/-/g, ''),
+        nextmeetdt: formDiary.nextmeetdt ? formDiary.nextmeetdt.replace(/-/g, '') : '',
+        actionitem: formDiary.actionitem || '',
+        actionstatus: formDiary.actionstatus || 'N',
+        nextmeetagenda: formDiary.nextmeetagenda || ''
       }
       await api.post('/hsaa/diary/save', payload)
       vAlert('상담일지 저장 완료')
@@ -692,14 +708,19 @@ const saveCurrentTab = async () => {
       const formData = new FormData()
       const docData = { ...formDocs,
         cmpycd: authStore.cmpycd,
+        regdt: (formDocs.regdt || today).replace(/-/g, ''),
+        ser: formDocs.ser || '',
         custcd: formSales.custcd,
-        salesid: formSales.salesid
+        salesid: formSales.salesid,
+        title: formDocs.title,
+        docgb: formDocs.docgb
       }
+      console.log(docData)
       formData.append('doc', JSON.stringify(docData))
       if (formDocs.file) {
         formData.append('file', formDocs.file)
       }
-
+      console.log(formData)
       await api.post('/hsaa/docs/save', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
@@ -902,13 +923,23 @@ onMounted(async () => {
     gridStages.on("rowClick", (e, row) => Object.assign(formStage, row.getData()))
 
     gridDocs = new Tabulator(docsGridRef.value!, {
-    layout: "fitColumns", height: "100%", selectable: 1,
-    columns: [
-        { title: "유형", field: "docgbnm", width: 150 },
-        { title: "문서제목", field: "title", widthGrow: 1.5 },
-        { title: "파일명", field: "filename", widthGrow: 1, cssClass: "text-primary clickable" },
-        { title: "등록일", field: "addtime", width: 150, formatter: (cell: any) => fYmd(cell.getValue()) }
-    ]
+      layout: "fitColumns", height: "100%", selectable: 1,
+      columns: [
+        { title: "등록일", field: "regdt", width: 110, hozAlign: "center", formatter: (cell: any) => fYmd(cell.getValue()) },
+        { title: "일련번호", field: "ser", width: 80, hozAlign: "center" },
+        { title: "유형", field: "docgbnm", width: 120, hozAlign: "center" },
+        { title: "문서제목", field: "title", widthGrow: 1.5, hozAlign: "left" },
+        { title: "파일명", field: "filename", widthGrow: 1, hozAlign: "left", formatter: (cell: any) => {
+            const filename = cell.getValue()
+            if (!filename) root: {
+              const filename = cell.getValue()
+            }
+            const filenameVal = cell.getValue()
+            if (!filenameVal) return ''
+            const baseStorage = API_URL ? API_URL.replace(/\/api$/, '') : ''
+            return `<a href="${baseStorage}/storage/${authStore.cmpycd}/sfa/${encodeURIComponent(filenameVal)}" target="_blank" class="text-primary text-decoration-underline">${filenameVal}</a>`
+        }}
+      ]
     })
     gridDocs.on("rowClick", (e, row) => Object.assign(formDocs, row.getData()))
 

@@ -1,5 +1,6 @@
 package com.crmbank.erp.mobile.hsaa;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -36,6 +37,8 @@ import retrofit2.Response;
 /**
  * 🚀 [MHSAA600U] 영업목표 관리 (개인 영업목표 조회 및 수정)
  */
+@SuppressLint({"SetTextI18n", "NotifyDataSetChanged", "DefaultLocale", "SimpleDateFormat"})
+@SuppressWarnings({"unused", "FieldCanBeLocal"})
 public class MHSAA600U extends BaseActivity {
 
     private EditText etYear;

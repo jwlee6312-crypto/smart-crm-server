@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="#F0F2F5"
-    android:importantForAutofill="noExcludeDescendants"
-    tools:ignore="HardcodedText,ContentDescription,LabelFor,TextFields,RtlSymmetry,RtlHardcoded,SmallSp">
+    android:importantForAutofill="noExcludeDescendants">
 
     <!-- Header -->
     <LinearLayout
@@ -220,108 +218,6 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Row: Action Item & Status -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="8dp"
-                android:baselineAligned="false">
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1.4"
-                    android:orientation="vertical"
-                    android:layout_marginEnd="4dp">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="후속조치 (Action Item)"
-                        android:textSize="11sp"
-                        android:textColor="#0d6efd"
-                        android:textStyle="bold"/>
-                    <EditText
-                        android:id="@+id/etActionItem"
-                        android:layout_width="match_parent"
-                        android:layout_height="38dp"
-                        android:background="@drawable/bg_input_field"
-                        android:hint="예: 견적서 재발송"
-                        android:paddingHorizontal="10dp"
-                        android:textSize="12sp"
-                        android:textColor="#333333"/>
-                </LinearLayout>
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="0.6"
-                    android:orientation="vertical"
-                    android:layout_marginStart="4dp"
-                    android:gravity="bottom">
-                    <CheckBox
-                        android:id="@+id/cbActionStatus"
-                        android:layout_width="match_parent"
-                        android:layout_height="38dp"
-                        android:text="조치완료"
-                        android:textSize="11sp"
-                        android:textStyle="bold"
-                        android:textColor="#198754"/>
-                </LinearLayout>
-            </LinearLayout>
-
-            <!-- Row: Next Meeting Date & Agenda -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="8dp"
-                android:baselineAligned="false">
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="0.9"
-                    android:orientation="vertical"
-                    android:layout_marginEnd="4dp">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="다음 미팅일"
-                        android:textSize="11sp"
-                        android:textColor="#dc3545"
-                        android:textStyle="bold"/>
-                    <TextView
-                        android:id="@+id/tvNextMeetDt"
-                        android:layout_width="match_parent"
-                        android:layout_height="38dp"
-                        android:background="@drawable/bg_input_field"
-                        android:gravity="center"
-                        android:textSize="12sp"
-                        android:textColor="#333333"/>
-                </LinearLayout>
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1.1"
-                    android:orientation="vertical"
-                    android:layout_marginStart="4dp">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="다음 미팅 안건"
-                        android:textSize="11sp"
-                        android:textColor="#dc3545"
-                        android:textStyle="bold"/>
-                    <EditText
-                        android:id="@+id/etNextMeetAgenda"
-                        android:layout_width="match_parent"
-                        android:layout_height="38dp"
-                        android:background="@drawable/bg_input_field"
-                        android:hint="안건 입력"
-                        android:paddingHorizontal="10dp"
-                        android:textSize="12sp"
-                        android:textColor="#333333"/>
-                </LinearLayout>
-            </LinearLayout>
-
             <!-- Row 4: Report Content (Optional) -->
             <TextView
                 android:id="@+id/tvReportContentLabel"
@@ -358,16 +254,116 @@
                 android:id="@+id/etDiaryContent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:minLines="12"
-                android:maxLines="30"
+                android:minLines="10"
+                android:maxLines="25"
                 android:background="@drawable/bg_input_field"
                 android:gravity="top"
                 android:padding="10dp"
                 android:textSize="11sp"
                 android:textColor="#333333"
-                android:layout_marginBottom="12dp"
+                android:layout_marginBottom="8dp"
                 android:inputType="textMultiLine"
                 android:lineSpacingExtra="4dp"/>
+
+            <!-- Action Item & Status -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp"
+                android:baselineAligned="false">
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1.3"
+                    android:orientation="vertical"
+                    android:layout_marginEnd="4dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="후속조치 (Action)"
+                        android:textSize="11sp"
+                        android:textColor="#666666"/>
+                    <EditText
+                        android:id="@+id/etActionItem"
+                        android:layout_width="match_parent"
+                        android:layout_height="38dp"
+                        android:background="@drawable/bg_input_field"
+                        android:hint="예: 견적서 재발송"
+                        android:paddingHorizontal="10dp"
+                        android:textSize="12sp"
+                        android:textColor="#333333"/>
+                </LinearLayout>
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="0.7"
+                    android:orientation="vertical"
+                    android:layout_marginStart="4dp"
+                    android:gravity="bottom">
+                    <CheckBox
+                        android:id="@+id/cbActionStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="38dp"
+                        android:text="조치완료"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="#198754"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Next Meeting Date & Agenda -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="12dp"
+                android:baselineAligned="false">
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginEnd="4dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="다음 미팅일"
+                        android:textSize="11sp"
+                        android:textColor="#666666"/>
+                    <TextView
+                        android:id="@+id/tvNextMeetDt"
+                        android:layout_width="match_parent"
+                        android:layout_height="38dp"
+                        android:background="@drawable/bg_input_field"
+                        android:gravity="center"
+                        android:textSize="12sp"
+                        android:textColor="#333333"
+                        android:hint="YYYY-MM-DD"/>
+                </LinearLayout>
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginStart="4dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="다음 미팅 안건"
+                        android:textSize="11sp"
+                        android:textColor="#666666"/>
+                    <EditText
+                        android:id="@+id/etNextMeetAgenda"
+                        android:layout_width="match_parent"
+                        android:layout_height="38dp"
+                        android:background="@drawable/bg_input_field"
+                        android:hint="안건 입력"
+                        android:paddingHorizontal="10dp"
+                        android:textSize="12sp"
+                        android:textColor="#333333"/>
+                </LinearLayout>
+            </LinearLayout>
 
             <!-- Coaching Result Area (Shown when coaching exists) -->
             <LinearLayout

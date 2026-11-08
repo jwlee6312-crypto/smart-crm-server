@@ -2,6 +2,7 @@ package com.crmbank.erp.mobile.hsaa;
 
 import android.annotation.SuppressLint;
 import android.app.DatePickerDialog;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -41,8 +42,8 @@ import retrofit2.Response;
 /**
  * 🚀 [MHSAA400U] 영업활동 코칭등록
  */
-@SuppressLint({"SetTextI18n", "SimpleDateFormat"})
-@SuppressWarnings({"unchecked", "unused"})
+@SuppressLint({"SetTextI18n", "NotifyDataSetChanged", "DefaultLocale", "SimpleDateFormat"})
+@SuppressWarnings({"unused", "FieldCanBeLocal"})
 public class MHSAA400U extends BaseActivity {
 
     private TextView tvSdate, tvEdate, tvDetailTitle, tvDiaryContent, tvReportContent, tvReportDt;
@@ -53,6 +54,7 @@ public class MHSAA400U extends BaseActivity {
     private LinearLayout layoutDetail;
 
     private ApiService apiService;
+    private String cmpycd, userid;
     private final List<Map<String, Object>> salesmanList = new ArrayList<>();
     private final List<Map<String, Object>> consultationList = new ArrayList<>();
     private Map<String, Object> currentRecord = null;
@@ -61,6 +63,10 @@ public class MHSAA400U extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_mhsaa400u);
+
+        SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+        cmpycd = prefs.getString("cmpycd", "coit").trim();
+        userid = prefs.getString("userId", "");
 
         apiService = RetrofitClient.getApiService();
 
@@ -125,7 +131,7 @@ public class MHSAA400U extends BaseActivity {
 
                     List<String> names = new ArrayList<>();
                     for (Map<String, Object> u : salesmanList) names.add(getStringVal(u, "usernm"));
-                    ArrayAdapter<String> adapter = new ArrayAdapter<>(MHSAA400U.this, android.R.layout.simple_spinner_item, names);
+                    ArrayAdapter<String> adapter = new ArrayAdapter<>(MHSAA400U.this, R.layout.item_spinner, names);
                     adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
                     spSalesman.setAdapter(adapter);
                 }
@@ -134,16 +140,13 @@ public class MHSAA400U extends BaseActivity {
         });
     }
 
-    @SuppressLint("NotifyDataSetChanged")
     private void fetchList() {
         String sdate = tvSdate.getText().toString().replace("-", "");
         String edate = tvEdate.getText().toString().replace("-", "");
         String schcustnm = etCustNm.getText().toString().trim();
-        String salesmanId;
+        String salesmanId = "";
         if (spSalesman.getSelectedItemPosition() > 0) {
             salesmanId = getStringVal(salesmanList.get(spSalesman.getSelectedItemPosition()), "userid");
-        } else {
-            salesmanId = "";
         }
 
         Map<String, Object> p = new HashMap<>();
@@ -154,6 +157,7 @@ public class MHSAA400U extends BaseActivity {
         p.put("page", 1);
         p.put("limit", 200);
         
+        // 🚀 Add new filters
         if (cbReportOnly.isChecked()) p.put("reportyn", "Y");
         if (cbCoachedOnly.isChecked()) p.put("coachingyn", "Y");
 
@@ -213,7 +217,9 @@ public class MHSAA400U extends BaseActivity {
 
     private void showDatePicker(TextView tv) {
         Calendar cal = Calendar.getInstance();
-        new DatePickerDialog(this, (view, y, m, d) -> tv.setText(String.format(Locale.getDefault(), "%d-%02d-%02d", y, m + 1, d)), cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show();
+        new DatePickerDialog(this, (view, y, m, d) -> {
+            tv.setText(String.format(Locale.getDefault(), "%d-%02d-%02d", y, m + 1, d));
+        }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show();
     }
 
     private String getStringVal(Map<String, Object> map, String key) {
@@ -223,8 +229,7 @@ public class MHSAA400U extends BaseActivity {
         return val != null ? String.valueOf(val).trim() : "";
     }
 
-    private String formatDate(String dateStr) {
-        String d = dateStr;
+    private String formatDate(String d) {
         if (d == null || d.isEmpty()) return "";
         if (d.contains(" ")) d = d.split(" ")[0];
         return d.length() == 8 ? String.format("%s-%s-%s", d.substring(0,4), d.substring(4,6), d.substring(6,8)) : d;
@@ -252,18 +257,19 @@ public class MHSAA400U extends BaseActivity {
             if (content.isEmpty()) content = getStringVal(item, "content");
             holder.tvSummary.setText(content);
 
+            // Status Logic
             boolean isReported = "Y".equalsIgnoreCase(getStringVal(item, "reportyn"));
             boolean isCoached = "Y".equalsIgnoreCase(getStringVal(item, "coachingreadyn"));
             
             if (isCoached) {
                 holder.tvStatus.setText("코칭완료");
-                if (holder.tvStatus.getBackground() != null) holder.tvStatus.getBackground().setTint(Color.parseColor("#198754"));
+                holder.tvStatus.getBackground().setTint(Color.parseColor("#198754"));
             } else if (isReported) {
                 holder.tvStatus.setText("보고요청");
-                if (holder.tvStatus.getBackground() != null) holder.tvStatus.getBackground().setTint(Color.parseColor("#0d6efd"));
+                holder.tvStatus.getBackground().setTint(Color.parseColor("#0d6efd"));
             } else {
                 holder.tvStatus.setText("일반상담");
-                if (holder.tvStatus.getBackground() != null) holder.tvStatus.getBackground().setTint(Color.parseColor("#6c757d"));
+                holder.tvStatus.getBackground().setTint(Color.parseColor("#6c757d"));
             }
 
             holder.itemView.setOnClickListener(v -> showDetail(item));

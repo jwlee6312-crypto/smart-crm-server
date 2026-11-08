@@ -398,21 +398,4 @@
            AND TRANCD = #{trancd}
     </delete>
 
-    <select id="selectUngeocodedAddresses" parameterType="map" resultType="map">
-        SELECT cmpycd, custcd, trancd, address FROM hsba130t_tbl
-         WHERE cmpycd = #{cmpycd}
-           AND address IS NOT NULL AND address != ''
-           AND (latitude IS NULL OR longitude IS NULL)
-    </select>
-
-    <update id="updateLatLon" parameterType="map">
-        UPDATE hsba130t_tbl
-           SET latitude = #{latitude},
-               longitude = #{longitude},
-               updtime = NOW()
-         WHERE cmpycd = #{cmpycd}
-           AND custcd = #{custcd}
-           AND trancd = #{trancd}
-    </update>
-
 </mapper>

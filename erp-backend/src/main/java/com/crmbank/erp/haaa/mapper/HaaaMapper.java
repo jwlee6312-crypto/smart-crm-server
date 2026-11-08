@@ -15,7 +15,6 @@ public interface HaaaMapper {
     int HAAA_800U_INSERT(Map<String, Object> params);
     int HAAA_800U_UPDATE(Map<String, Object> params);
     int HAAA_800U_DELETE(Map<String, Object> params);
-    int HAAA_800U_DELETE_SUB(Map<String, Object> params);
 
     List<Map<String, Object>> HAAA_810U_SELECT(Map<String, Object> params);
     int HAAA_810U_UPSERT(Map<String, Object> params);

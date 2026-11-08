@@ -41,7 +41,7 @@ import retrofit2.Response;
 /**
  * 🚀 [MHSAA130U] 상담일지 등록
  */
-@SuppressLint({"SetTextI18n", "SimpleDateFormat"})
+@SuppressLint({"SetTextI18n", "NotifyDataSetChanged", "DefaultLocale"})
 @SuppressWarnings({"unchecked", "unused"})
 public class MHSAA130U extends BaseActivity {
 
@@ -57,11 +57,23 @@ public class MHSAA130U extends BaseActivity {
     private String salesid = "";
     private String custcd = "";
     private String currentSer = "";
-    private String tostate = "";
+    private String tostate = ""; // 단계변동 정보는 저장 시 전달을 위해 유지
+
+    private final String DIARY_TEMPLATE = "[방문 목적]\n- \n\n[상담 내용]\n- \n\n[향후 계획]\n- ";
 
     private final List<Map<String, Object>> diaryList = new ArrayList<>();
     private final List<Map<String, Object>> channelCodeList = new ArrayList<>();
     private final List<Map<String, Object>> keymanList = new ArrayList<>();
+
+    @Override
+    protected String getProgramId() {
+        return "MHSAA130U";
+    }
+
+    @Override
+    protected String getProgramTitle() {
+        return "상담일지 등록";
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -124,12 +136,11 @@ public class MHSAA130U extends BaseActivity {
     }
 
     private void initializeForm() {
-        String diaryTemplate = "[방문 목적]\n- \n\n[상담 내용]\n- \n\n[향후 계획]\n- ";
         currentSer = "";
         tostate = "";
         etContHH.setText("10");
         etContMM.setText("00");
-        etDiaryContent.setText(diaryTemplate);
+        etDiaryContent.setText(DIARY_TEMPLATE);
         etReportContent.setText("");
         cbReportYn.setChecked(false);
         tvContDt.setText(new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date()));
@@ -145,25 +156,21 @@ public class MHSAA130U extends BaseActivity {
     }
 
     private void loadInitialData() {
-        loadCode(spChannel, channelCodeList);
-    }
-
-    private void loadCode(Spinner sp, List<Map<String, Object>> list) {
         apiService.getHsaaCodes("710").enqueue(new Callback<ApiResponse<List<Map<String, Object>>>>() {
             @Override public void onResponse(@NonNull Call<ApiResponse<List<Map<String, Object>>>> c, @NonNull Response<ApiResponse<List<Map<String, Object>>>> r) {
-                if (r.isSuccessful() && r.body() != null) {
-                    list.clear(); list.addAll(r.body().getData());
-                    setupSpinner(sp, list, "codenm", true);
+                if (r.isSuccessful() && r.body() != null && r.body().getData() != null) {
+                    channelCodeList.clear(); channelCodeList.addAll(r.body().getData());
+                    setupSpinner(spChannel, channelCodeList, true);
                 }
             }
             @Override public void onFailure(@NonNull Call<ApiResponse<List<Map<String, Object>>>> c, @NonNull Throwable t) {}
         });
     }
 
-    private void setupSpinner(Spinner sp, List<Map<String, Object>> data, String key, boolean hasEmpty) {
+    private void setupSpinner(Spinner sp, List<Map<String, Object>> data, boolean hasEmpty) {
         List<String> items = new ArrayList<>();
         if (hasEmpty) items.add("선택안함");
-        for (Map<String, Object> d : data) items.add(getStringVal(d, key));
+        for (Map<String, Object> d : data) items.add(getStringVal(d, "codenm"));
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.item_spinner, items);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         sp.setAdapter(adapter);
@@ -171,6 +178,7 @@ public class MHSAA130U extends BaseActivity {
 
     private void fetchSalesDetail() {
         apiService.getHsaaDetail(salesid).enqueue(new Callback<ApiResponse<Map<String, Object>>>() {
+            @SuppressWarnings("unchecked")
             @Override public void onResponse(@NonNull Call<ApiResponse<Map<String, Object>>> call, @NonNull Response<ApiResponse<Map<String, Object>>> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
                     Map<String, Object> mst = (Map<String, Object>) response.body().getData().get("master");
@@ -189,19 +197,27 @@ public class MHSAA130U extends BaseActivity {
     private void loadKeymen() {
         apiService.getHsaaKeyman(custcd).enqueue(new Callback<ApiResponse<List<Map<String, Object>>>>() {
             @Override public void onResponse(@NonNull Call<ApiResponse<List<Map<String, Object>>>> call, @NonNull Response<ApiResponse<List<Map<String, Object>>>> response) {
-                if (response.isSuccessful() && response.body() != null) {
+                if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
                     keymanList.clear(); keymanList.addAll(response.body().getData());
-                    setupSpinner(spKeyman, keymanList, "name", false);
+                    setupKeymanSpinner();
                 }
             }
             @Override public void onFailure(@NonNull Call<ApiResponse<List<Map<String, Object>>>> call, @NonNull Throwable t) {}
         });
     }
 
+    private void setupKeymanSpinner() {
+        List<String> items = new ArrayList<>();
+        for (Map<String, Object> d : keymanList) items.add(getStringVal(d, "name"));
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.item_spinner, items);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spKeyman.setAdapter(adapter);
+    }
+
     private void fetchDiaryHistory() {
         apiService.getHsaaDiary(salesid).enqueue(new Callback<ApiResponse<List<Map<String, Object>>>>() {
             @Override public void onResponse(@NonNull Call<ApiResponse<List<Map<String, Object>>>> call, @NonNull Response<ApiResponse<List<Map<String, Object>>>> response) {
-                if (response.isSuccessful() && response.body() != null) {
+                if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
                     diaryList.clear(); diaryList.addAll(response.body().getData());
                     refreshDiaryList();
                 }
@@ -233,29 +249,27 @@ public class MHSAA130U extends BaseActivity {
         cbReportYn.setChecked("Y".equals(getStringVal(item, "reportyn")));
         tvContDt.setText(formatDate(getStringVal(item, "contdt")));
         
+        // 🚀 코칭 내용 표시
         String coaching = getStringVal(item, "salescoaching");
         if (!coaching.isEmpty()) {
             layoutCoachingResult.setVisibility(View.VISIBLE);
             tvSalesCoaching.setText(coaching);
             tvCoachingDt.setText(String.format(Locale.getDefault(), "코칭일: %s", formatDate(getStringVal(item, "reportdt"))));
             
+            // 💡 확인 여부에 따른 버튼 표시
             boolean isRead = "Y".equalsIgnoreCase(getStringVal(item, "coachingreadyn"));
             btnConfirmCoaching.setVisibility(isRead ? View.GONE : View.VISIBLE);
         } else {
             layoutCoachingResult.setVisibility(View.GONE);
-            etActionItem.setText("");
-            cbActionStatus.setChecked(false);
-            tvNextMeetDt.setText("");
-            etNextMeetAgenda.setText("");
         }
         
         setSpinnerSelection(spChannel, channelCodeList, "codecd", getStringVal(item, "channel"), true);
         setSpinnerSelection(spKeyman, keymanList, "custid", getStringVal(item, "custid"), false);
 
-        etActionItem.setText(getStringVal(item, "actionItem"));
-        cbActionStatus.setChecked("1".equals(getStringVal(item, "actionStatus")));
-        tvNextMeetDt.setText(formatDate(getStringVal(item, "nextMeetDt")));
-        etNextMeetAgenda.setText(getStringVal(item, "nextMeetAgenda"));
+        etActionItem.setText(getStringVal(item, "actionitem"));
+        cbActionStatus.setChecked("Y".equals(getStringVal(item, "actionstatus")));
+        tvNextMeetDt.setText(formatDate(getStringVal(item, "nextmeetdt")));
+        etNextMeetAgenda.setText(getStringVal(item, "nextmeetagenda"));
     }
 
     private void confirmCoaching() {
@@ -294,21 +308,21 @@ public class MHSAA130U extends BaseActivity {
         payload.put("diarycontent", etDiaryContent.getText().toString());
         payload.put("reportyn", cbReportYn.isChecked() ? "Y" : "N");
         payload.put("reportcontent", etReportContent.getText().toString());
-        payload.put("tostate", tostate);
+        payload.put("actionitem", etActionItem.getText().toString().trim());
+        payload.put("actionstatus", cbActionStatus.isChecked() ? "Y" : "N");
+        payload.put("nextmeetdt", tvNextMeetDt.getText().toString().replace("-", "").trim());
+        payload.put("nextmeetagenda", etNextMeetAgenda.getText().toString().trim());
+        payload.put("tostate", tostate); // 단계변동 정보는 기존값 유지
         
-        String rawContent = etDiaryContent.getText().toString();
-        String content = rawContent.length() > 50 ? rawContent.substring(0, 50) : rawContent;
+        // 요약 내용 추출
+        String content = etDiaryContent.getText().toString();
+        if (content.length() > 50) content = content.substring(0, 50);
         payload.put("content", content);
 
         if (spKeyman.getSelectedItemPosition() >= 0) payload.put("custid", getStringVal(keymanList.get(spKeyman.getSelectedItemPosition()), "custid"));
         
         int chanIdx = spChannel.getSelectedItemPosition();
         if (chanIdx > 0) payload.put("channel", getStringVal(channelCodeList.get(chanIdx - 1), "codecd"));
-
-        payload.put("actionItem", etActionItem.getText().toString().trim());
-        payload.put("actionStatus", cbActionStatus.isChecked() ? "1" : "0");
-        payload.put("nextMeetDt", tvNextMeetDt.getText().toString().replace("-", "").trim());
-        payload.put("nextMeetAgenda", etNextMeetAgenda.getText().toString().trim());
 
         apiService.saveHsaaDiary(payload).enqueue(new Callback<ApiResponse<Object>>() {
             @Override public void onResponse(@NonNull Call<ApiResponse<Object>> call, @NonNull Response<ApiResponse<Object>> response) {
@@ -324,18 +338,15 @@ public class MHSAA130U extends BaseActivity {
     private void delete() {
         if (currentSer.isEmpty()) return;
         new AlertDialog.Builder(this).setTitle("삭제").setMessage("상담일지를 삭제하시겠습니까?")
-            .setPositiveButton("예", (d, w) -> performDelete())
-            .setNegativeButton("아니오", null).show();
-    }
-
-    private void performDelete() {
-        apiService.deleteHsaaDiary(salesid, currentSer).enqueue(new Callback<ApiResponse<Object>>() {
-            @Override public void onResponse(@NonNull Call<ApiResponse<Object>> c, @NonNull Response<ApiResponse<Object>> r) {
-                Toast.makeText(MHSAA130U.this, "삭제되었습니다.", Toast.LENGTH_SHORT).show();
-                fetchDiaryHistory(); initializeForm();
-            }
-            @Override public void onFailure(@NonNull Call<ApiResponse<Object>> c, @NonNull Throwable t) {}
-        });
+            .setPositiveButton("예", (d, w) -> {
+                apiService.deleteHsaaDiary(salesid, currentSer).enqueue(new Callback<ApiResponse<Object>>() {
+                    @Override public void onResponse(@NonNull Call<ApiResponse<Object>> c, @NonNull Response<ApiResponse<Object>> r) {
+                        Toast.makeText(MHSAA130U.this, "삭제되었습니다.", Toast.LENGTH_SHORT).show();
+                        fetchDiaryHistory(); initializeForm();
+                    }
+                    @Override public void onFailure(@NonNull Call<ApiResponse<Object>> c, @NonNull Throwable t) {}
+                });
+            }).setNegativeButton("아니오", null).show();
     }
 
     private void openHelp() {
@@ -362,18 +373,13 @@ public class MHSAA130U extends BaseActivity {
             @Override public int getCount() { return list.size(); }
             @Override public Object getItem(int p) { return list.get(p); }
             @Override public long getItemId(int p) { return p; }
-            @Override public View getView(int p, View convertView, ViewGroup pr) {
-                final View view;
-                if (convertView == null) {
-                    view = getLayoutInflater().inflate(R.layout.item_hsaa_pop, pr, false);
-                } else {
-                    view = convertView;
-                }
+            @Override public View getView(int p, View v, ViewGroup pr) {
+                if (v == null) v = getLayoutInflater().inflate(R.layout.item_hsaa_pop, pr, false);
                 Map<String, Object> item = list.get(p);
-                ((TextView) view.findViewById(R.id.tvPopCustNm)).setText(getStringVal(item, "custnm"));
-                ((TextView) view.findViewById(R.id.tvPopSalesTitle)).setText(getStringVal(item, "salestitle"));
-                ((TextView) view.findViewById(R.id.tvPopAddTime)).setText(formatDate(getStringVal(item, "addtime")));
-                return view;
+                ((TextView) v.findViewById(R.id.tvPopCustNm)).setText(getStringVal(item, "custnm"));
+                ((TextView) v.findViewById(R.id.tvPopSalesTitle)).setText(getStringVal(item, "salestitle"));
+                ((TextView) v.findViewById(R.id.tvPopAddTime)).setText(formatDate(getStringVal(item, "addtime")));
+                return v;
             }
         };
         lv.setAdapter(adapter);
@@ -386,7 +392,7 @@ public class MHSAA130U extends BaseActivity {
             p.put("schcustnm", etSch.getText().toString().trim());
             apiService.getHsaaMaster(p).enqueue(new Callback<ApiResponse<List<Map<String, Object>>>>() {
                 @Override public void onResponse(@NonNull Call<ApiResponse<List<Map<String, Object>>>> c, @NonNull Response<ApiResponse<List<Map<String, Object>>>> r) {
-                    if (r.isSuccessful() && r.body() != null) {
+                    if (r.isSuccessful() && r.body() != null && r.body().getData() != null) {
                         list.clear(); list.addAll(r.body().getData()); adapter.notifyDataSetChanged();
                     }
                 }
@@ -407,33 +413,35 @@ public class MHSAA130U extends BaseActivity {
 
     private void showDatePicker(TextView tv) {
         Calendar cal = Calendar.getInstance();
-        new DatePickerDialog(this, (view, y, m, d) -> tv.setText(String.format(Locale.getDefault(), "%d-%02d-%02d", y, m + 1, d)), cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show();
+        try {
+            String[] parts = tv.getText().toString().split("-");
+            if (parts.length == 3) {
+                cal.set(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]) - 1, Integer.parseInt(parts[2]));
+            }
+        } catch (Exception ignored) {}
+        new DatePickerDialog(this, (view, year, month, dayOfMonth) -> {
+            tv.setText(String.format(Locale.getDefault(), "%04d-%02d-%02d", year, month + 1, dayOfMonth));
+        }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show();
     }
 
     private String getStringVal(Map<String, Object> map, String key) {
-        if (map == null) return "";
-        Object val = map.get(key.toLowerCase());
-        if (val == null) val = map.get(key.toUpperCase());
-        return val != null ? String.valueOf(val).trim() : "";
+        if (map == null || map.get(key) == null) return "";
+        return String.valueOf(map.get(key)).trim();
     }
 
-    private void setSpinnerSelection(Spinner sp, List<Map<String, Object>> list, String key, String val, boolean hasEmpty) {
+    private String formatDate(String d) {
+        if (d == null || d.length() < 8) return d;
+        return d.substring(0, 4) + "-" + d.substring(4, 6) + "-" + d.substring(6, 8);
+    }
+
+    private void setSpinnerSelection(Spinner sp, List<Map<String, Object>> data, String key, String val, boolean hasEmpty) {
         int offset = hasEmpty ? 1 : 0;
-        for (int i = 0; i < list.size(); i++) {
-            if (getStringVal(list.get(i), key).equals(val)) {
+        for (int i = 0; i < data.size(); i++) {
+            if (getStringVal(data.get(i), key).equals(val)) {
                 sp.setSelection(i + offset);
-                break;
+                return;
             }
         }
+        sp.setSelection(0);
     }
-
-    private String formatDate(String dateStr) {
-        String d = dateStr;
-        if (d == null || d.isEmpty()) return "";
-        if (d.contains(" ")) d = d.split(" ")[0];
-        return d.length() == 8 ? String.format("%s-%s-%s", d.substring(0,4), d.substring(4,6), d.substring(6,8)) : d;
-    }
-
-    @Override protected String getProgramTitle() { return "상담일지 등록"; }
-    @Override protected String getProgramId() { return "MHSAA130U"; }
 }

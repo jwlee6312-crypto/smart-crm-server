@@ -116,9 +116,6 @@ public class HaaaController {
             if (params.get("userid") == null || params.get("userid").toString().trim().isEmpty()) {
                 params.put("userid", user.getUserid());
             }
-            if (params.get("usergrp") == null || params.get("usergrp").toString().trim().isEmpty()) {
-                params.put("usergrp", user.getUsergrp());
-            }
             params.put("updemp", user.getUserid());
         }
     }

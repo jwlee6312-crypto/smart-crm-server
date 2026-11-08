@@ -18,7 +18,7 @@ import java.util.Objects;
 @Service
 public class FileStorageService {
 
-    private final String storageDirectory = "/app/storage";
+    private final String storageDirectory = new File("/app/storage").exists() ? "/app/storage" : (System.getProperty("user.dir") + "/storage");
 
     @PostConstruct
     public void init() {

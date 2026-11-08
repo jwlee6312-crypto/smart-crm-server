@@ -7,6 +7,7 @@ public class Hsaa310tDto {
     private String cmpycd;
     private String custcd;
     private String salesid;
+    private String userid;
     private String ser;
     private String chngdt;
     private String state;
@@ -18,6 +19,7 @@ public class Hsaa310tDto {
     private String holdcd;
     private String realdt;
     private java.math.BigDecimal realamt;
+    private String foredelivdt;
     private String remark;
     
     private String addtime;
