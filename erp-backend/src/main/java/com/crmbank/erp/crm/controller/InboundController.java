@@ -1,6 +1,7 @@
 package com.crmbank.erp.crm.controller;
 
 import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -68,11 +69,12 @@ public class InboundController {
     }
 
     @GetMapping("/play-recording")
-    public ResponseEntity<FileSystemResource> playRecording(@RequestParam(value = "file", required = false) String file) throws IOException {
-        log.info("🎙️ [PLAY-RECORDING 요청 수신] 파라미터 file = [{}]", file);
+    public void playRecording(@RequestParam(value = "file", required = false) String file, jakarta.servlet.http.HttpServletResponse response) throws IOException {
+        log.info("🔥 [PLAY-RECORDING 진입 성공!!!] 요청된 파일 파라미터 file = [{}]", file);
         if (file == null || file.trim().isEmpty()) {
             log.warn("⚠️ [PLAY-RECORDING] file 파라미터가 비어있음");
-            return ResponseEntity.notFound().build();
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
         }
         
         String fileNameOnly = new File(file.contains("?") ? file.substring(0, file.indexOf("?")) : file).getName();
@@ -95,16 +97,26 @@ public class InboundController {
 
         if (targetFile == null || !targetFile.exists()) {
             log.error("❌ [PLAY-RECORDING 음원 파일 최종 없음] 탐색된 최종 경로: {}", targetFile != null ? targetFile.getAbsolutePath() : "null");
-            return ResponseEntity.notFound().build();
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
         }
 
         log.info("✅ [PLAY-RECORDING 파일 전송 시작] 경로: {}, 크기: {} bytes", targetFile.getAbsolutePath(), targetFile.length());
-        FileSystemResource resource = new FileSystemResource(targetFile);
-        return ResponseEntity.ok()
-                .header("Content-Type", "audio/wav")
-                .header("Accept-Ranges", "bytes")
-                .contentLength(resource.contentLength())
-                .body(resource);
+        response.reset();
+        response.setContentType("audio/wav");
+        response.setCharacterEncoding(null);
+        response.setHeader("Accept-Ranges", "bytes");
+        response.setContentLength((int) targetFile.length());
+
+        try (java.io.InputStream in = new java.io.FileInputStream(targetFile);
+             jakarta.servlet.ServletOutputStream out = response.getOutputStream()) {
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            while ((bytesRead = in.read(buffer)) != -1) {
+                out.write(buffer, 0, bytesRead);
+            }
+            out.flush();
+        }
     }
 
     @PostMapping("/save")
