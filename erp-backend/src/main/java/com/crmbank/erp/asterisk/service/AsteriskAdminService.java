@@ -64,12 +64,27 @@ public class AsteriskAdminService {
         }
     }
 
-    @Value("${asterisk.tts.script.path}")
+    @Value("${asterisk.tts.script.path:/app/scripts/generate_tts.py}")
     private String ttsScriptPath;
 
     private void generateTtsFile(String scriptId, String text) {
-        // Python3 execution disabled per user request
-        log.info("🎙️ TTS 생성 생략 (Python 비활성화): {} {}", scriptId, text);
+        try {
+            log.info("🎙️ [TTS 생성 시작] scriptId: {}, text: {}, path: {}", scriptId, text, ttsScriptPath);
+            ProcessBuilder pb = new ProcessBuilder("python3", ttsScriptPath, scriptId, text);
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            
+            java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(process.getInputStream()));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                log.info("🎙️ [Python TTS Output] {}", line);
+            }
+            
+            int exitCode = process.waitFor();
+            log.info("🎙️ [TTS 생성 완료] exitCode: {}", exitCode);
+        } catch (Exception e) {
+            log.error("❌ [TTS 생성 실패]: {}", e.getMessage(), e);
+        }
     }
 
     @Value("${backend.internal.url:http://erp-backend:8080}")

@@ -7,10 +7,12 @@ import com.crmbank.erp.crm.dto.CallMstDto;
 import com.crmbank.erp.crm.dto.CtiEscalationDto;
 import com.crmbank.erp.crm.dto.TotalCallLogDto;
 import com.crmbank.erp.crm.mapper.inbound.InboundMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.File;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,6 +28,9 @@ public class InboundService {
 
     private final InboundMapper inboundMapper;
     private final GeminiAiService geminiAiService;
+
+    @Value("${asterisk.recording.path:/var/spool/asterisk/monitor}")
+    private String recordingPath;
 
     /**
      * 🤖 [AI 비동기 처리] 통화 종료 후 백그라운드에서 요약 및 업데이트
@@ -87,6 +92,23 @@ public class InboundService {
         return inboundMapper.findCustomerByCustCd(params);
     }
 
+    private File findRecordingFile(File baseDir, String fileName) {
+        if (!baseDir.exists() || !baseDir.isDirectory()) return null;
+        File target = new File(baseDir, fileName);
+        if (target.exists() && target.isFile()) return target;
+
+        File[] children = baseDir.listFiles();
+        if (children != null) {
+            for (File child : children) {
+                if (child.isDirectory()) {
+                    File found = findRecordingFile(child, fileName);
+                    if (found != null && found.exists()) return found;
+                }
+            }
+        }
+        return null;
+    }
+
     /**
      * 💡 인바운드 상담 통합 저장 (소문자 표준화 적용)
      */
@@ -118,6 +140,19 @@ public class InboundService {
             params.put("cmpycd", dto.getCmpycd());
             params.put("svcymd", svcymd);
             dto.setSvcno(inboundMapper.generateSvcNo(params));
+        }
+
+        // 🚀 recordings 전달값 또는 linkedid를 기반으로 녹취 파일명을 최우선 확보하여 call_mst_tbl에 100% 반영 보장
+        if (dto.getRec_file() == null || dto.getRec_file().trim().isEmpty() || "null".equalsIgnoreCase(dto.getRec_file())) {
+            if (recordings != null && !recordings.isEmpty() && recordings.get(0) != null && !recordings.get(0).trim().isEmpty()) {
+                dto.setRec_file(recordings.get(0));
+            } else if (dto.getLinkedid() != null && !dto.getLinkedid().trim().isEmpty() && !dto.getLinkedid().equals("MANUAL")) {
+                File recordingsRoot = new File(recordingPath);
+                File found = findRecordingFile(recordingsRoot, dto.getLinkedid() + ".wav");
+                if (found != null && found.exists()) {
+                    dto.setRec_file(found.getName());
+                }
+            }
         }
 
         // 2. 상담 마스터 저장

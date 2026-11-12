@@ -4,7 +4,7 @@
     프로그램 ID	: HGIA020S
 	작성일자	    : 2026.05.19
 	작성자	      : AI Assistant
-	Description	: 인바운드 상담 내역을 조회하고 녹취 파일을 청취하는 현황 화면 (이전 버전 복구 및 발신자 정보 추가)
+	Description	: 인바운드 상담 내역을 조회하고 녹취 파일을 청취하는 현황 화면
 	=============================================================
 -->
 
@@ -57,8 +57,7 @@
 				</div>
 				<div class="card-body text-center p-4">
 					<div class="mb-3 small fw-bold text-primary text-truncate">{{ currentFile }}</div>
-					<audio ref="audioRef" controls autoplay class="w-100">
-						<source :src="audioUrl" type="audio/wav">
+					<audio ref="audioRef" :src="audioUrl" controls autoplay class="w-100">
 						브라우저가 오디오 재생을 지원하지 않습니다.
 					</audio>
 				</div>
@@ -68,7 +67,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, nextTick } from 'vue'
 import { TabulatorFull as Tabulator, type CellComponent } from 'tabulator-tables'
 import 'tabulator-tables/dist/css/tabulator_bootstrap5.min.css'
 import { useAlerts } from '@/composables/useAlerts'
@@ -148,8 +147,14 @@ const handleSearch = async () => {
 
 const playRecording = (file: string) => {
 	currentFile.value = file;
-	audioUrl.value = `${import.meta.env.VITE_API_URL}/crm/inbound/play-recording?file=${file}`;
+	audioUrl.value = `/crm/inbound/play-recording?file=${encodeURIComponent(file)}&t=${new Date().getTime()}`;
 	showAudioPlayer.value = true;
+	nextTick(() => {
+		if (audioRef.value) {
+			audioRef.value.load();
+			audioRef.value.play().catch(() => {});
+		}
+	});
 }
 
 const closePlayer = () => {

@@ -63,6 +63,7 @@ services:
     ports: ["8090:8080"]
     volumes:
       - /data/smart-erp-crm/storage:/app/storage
+      - ./scripts:/app/scripts:ro
       - /data/smart-erp-crm/sounds/custom:/var/lib/asterisk/sounds/custom:rw
       - /data/smart-erp-crm/recordings:/var/spool/asterisk/monitor:ro
       - ./backend.log:/app/backend.log

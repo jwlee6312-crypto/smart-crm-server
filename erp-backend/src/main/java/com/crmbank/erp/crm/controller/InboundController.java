@@ -68,34 +68,43 @@ public class InboundController {
     }
 
     @GetMapping("/play-recording")
-    public ResponseEntity<ResourceRegion> playRecording(@RequestHeader HttpHeaders headers, @RequestParam(value = "file", required = false) String file) throws IOException {
-        if (file == null || file.trim().isEmpty()) return ResponseEntity.notFound().build();
+    public ResponseEntity<FileSystemResource> playRecording(@RequestParam(value = "file", required = false) String file) throws IOException {
+        log.info("🎙️ [PLAY-RECORDING 요청 수신] 파라미터 file = [{}]", file);
+        if (file == null || file.trim().isEmpty()) {
+            log.warn("⚠️ [PLAY-RECORDING] file 파라미터가 비어있음");
+            return ResponseEntity.notFound().build();
+        }
         
         String fileNameOnly = new File(file.contains("?") ? file.substring(0, file.indexOf("?")) : file).getName();
         File targetFile = new File(soundsPath, fileNameOnly);
+        log.info("🎙️ [PLAY-RECORDING] 1차 soundsPath 탐색: {}, 존재여부: {}", targetFile.getAbsolutePath(), targetFile.exists());
         
         if (!targetFile.exists()) {
+            log.info("🎙️ [PLAY-RECORDING] 2차 recordings(기본경로) 재귀 탐색 시작 (baseDir: {}, fileName: {})", recordingPath, fileNameOnly);
             targetFile = findRecordingFile(new File(recordingPath), fileNameOnly);
+            if (targetFile != null) {
+                log.info("🎙️ [PLAY-RECORDING] 재귀 탐색 결과 발견: {}, 존재여부: {}, 크기: {} bytes", targetFile.getAbsolutePath(), targetFile.exists(), targetFile.length());
+            } else {
+                log.warn("⚠️ [PLAY-RECORDING] 재귀 탐색 결과 null");
+            }
             if (targetFile == null || !targetFile.exists()) {
                 targetFile = new File(recordingPath, file);
+                log.info("🎙️ [PLAY-RECORDING] 3차 직접결합 경로 탐색: {}, 존재여부: {}", targetFile.getAbsolutePath(), targetFile.exists());
             }
         }
 
-        if (!targetFile.exists()) {
-            log.error("❌ [음원 파일 없음] 최종 탐색 경로: {}", targetFile.getAbsolutePath());
+        if (targetFile == null || !targetFile.exists()) {
+            log.error("❌ [PLAY-RECORDING 음원 파일 최종 없음] 탐색된 최종 경로: {}", targetFile != null ? targetFile.getAbsolutePath() : "null");
             return ResponseEntity.notFound().build();
         }
 
+        log.info("✅ [PLAY-RECORDING 파일 전송 시작] 경로: {}, 크기: {} bytes", targetFile.getAbsolutePath(), targetFile.length());
         FileSystemResource resource = new FileSystemResource(targetFile);
-        long contentLength = resource.contentLength();
-        List<HttpRange> ranges = headers.getRange();
-        if (!ranges.isEmpty()) {
-            HttpRange range = ranges.get(0);
-            long start = range.getRangeStart(contentLength);
-            long end = range.getRangeEnd(contentLength);
-            return ResponseEntity.status(206).contentType(MediaType.parseMediaType("audio/wav")).body(new ResourceRegion(resource, start, Math.min(1024*1024L, end - start + 1)));
-        }
-        return ResponseEntity.status(206).contentType(MediaType.parseMediaType("audio/wav")).body(new ResourceRegion(resource, 0, Math.min(1024*1024L, contentLength)));
+        return ResponseEntity.ok()
+                .header("Content-Type", "audio/wav")
+                .header("Accept-Ranges", "bytes")
+                .contentLength(resource.contentLength())
+                .body(resource);
     }
 
     @PostMapping("/save")
